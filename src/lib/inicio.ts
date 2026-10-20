@@ -1,11 +1,12 @@
 // Todo lo que necesita la página de inicio, en una sola lectura.
 import "server-only";
+import { unstable_cache } from "next/cache";
 import { and, asc, eq, isNull, or, lte, gte } from "drizzle-orm";
 import { db, schema as s } from "@/db";
 import { hoyISO } from "./fechas";
 import { leerAjustes, leerCatalogo, leerEscalones } from "./datos";
 
-export async function datosInicio() {
+async function leerInicio() {
   const hoy = hoyISO();
   const [catalogo, escalones, ajustes, promos, puntos] = await Promise.all([
     leerCatalogo(),
@@ -29,4 +30,9 @@ export async function datosInicio() {
   return { ...catalogo, escalones, ajustes, promos, puntos };
 }
 
-export type DatosInicio = Awaited<ReturnType<typeof datosInicio>>;
+/** Cacheado en el servidor: la página no consulta la base en cada visita.
+ * Se renueva solo cada 5 minutos (promos que empiezan o vencen) y al instante cuando la dueña guarda algo en el panel. */
+export const ETIQUETA_INICIO = "inicio";
+export const datosInicio = unstable_cache(leerInicio, ["datos-inicio"], { revalidate: 300, tags: [ETIQUETA_INICIO] });
+
+export type DatosInicio = Awaited<ReturnType<typeof leerInicio>>;

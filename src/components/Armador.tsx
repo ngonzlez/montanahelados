@@ -185,7 +185,7 @@ export default function Armador(p: Props) {
     const estado = it.estado === "agotado" ? "Agotado" : !ok ? "Hoy no hay" : "";
     return (
       <div key={k} className={`fila-sabor ${t}${v > 0 ? " con" : ""}${!ok ? " no" : ""}`}>
-        {it.foto ? <img className="mini" alt="" src={it.foto} /> : <span className="mini" />}
+        {it.foto ? <img className="mini" alt="" loading="lazy" decoding="async" src={it.foto} /> : <span className="mini" />}
         <span className="nombre" id={`${id}-n`}>
           {it.nombre}
           {it.detalle ? <small>{it.detalle}</small> : null}

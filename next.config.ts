@@ -31,6 +31,9 @@ const config: NextConfig = {
         ],
       },
       { source: "/gestionar/(.*)", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] },
+      // fotos, bordes, logo y cursores: el navegador los guarda una semana y los renueva en segundo plano
+      { source: "/:carpeta(fotos|bordes|marca)/:archivo*", headers: [{ key: "Cache-Control", value: "public, max-age=604800, stale-while-revalidate=86400" }] },
+      { source: "/:archivo(cursor.svg|cursor-mordido.svg|favicon.svg|apple-touch-icon.png|compartir.jpg)", headers: [{ key: "Cache-Control", value: "public, max-age=604800, stale-while-revalidate=86400" }] },
     ];
   },
 };

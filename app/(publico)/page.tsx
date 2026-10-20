@@ -47,7 +47,7 @@ export default async function Inicio() {
         <div className="banda b3"><Banda i={2} /></div>
         <Logo className="logo-intro" />
         <div className="fila">
-          {conFoto.slice(0, 7).map((s, i) => <img key={s.id} alt="" src={s.foto!} style={{ animationDelay: `${(1.5 + i * 0.12).toFixed(2)}s` }} />)}
+          {conFoto.slice(0, 7).map((s, i) => <img key={s.id} alt="" decoding="async" src={s.foto!} style={{ animationDelay: `${(1.5 + i * 0.12).toFixed(2)}s` }} />)}
         </div>
         <button className="boton claro saltar" type="button">Saltar</button>
       </div>
@@ -91,7 +91,7 @@ export default async function Inicio() {
               <div className="abanico">
                 {abanico.map((s, i) => {
                   const [x, g, h] = ABANICO[i];
-                  return <img key={s.id} src={s.foto!} alt="" style={{ ["--x" as string]: `${x}%`, ["--g" as string]: `${g}deg`, ["--h" as string]: h, ["--d" as string]: `${(0.15 + Math.abs(x) / 100).toFixed(2)}s`, zIndex: 10 - Math.floor(Math.abs(x) / 12) }} />;
+                  return <img key={s.id} src={s.foto!} alt="" decoding="async" fetchPriority={i === 3 ? "high" : "auto"} style={{ ["--x" as string]: `${x}%`, ["--g" as string]: `${g}deg`, ["--h" as string]: h, ["--d" as string]: `${(0.15 + Math.abs(x) / 100).toFixed(2)}s`, zIndex: 10 - Math.floor(Math.abs(x) / 12) }} />;
                 })}
               </div>
               {mejorG && escG.length > 1 ? (
@@ -117,7 +117,7 @@ export default async function Inicio() {
             <div className="grilla-sabores">
               {d.sabores.map((s, i) => (
                 <div key={s.id} className="sabor pop" style={{ ["--r" as string]: `${(-1) ** i * 4}deg`, ["--r2" as string]: `${(-1) ** i}deg`, ["--d" as string]: `${((i % 6) * 0.06).toFixed(2)}s` }}>
-                  <div className="tile" style={{ ["--c" as string]: s.color }}>{s.foto ? <img src={s.foto} alt={`Heladito de ${s.nombre.toLowerCase()} en su bolsita`} /> : null}</div>
+                  <div className="tile" style={{ ["--c" as string]: s.color }}>{s.foto ? <img loading="lazy" decoding="async" src={s.foto} alt={`Heladito de ${s.nombre.toLowerCase()} en su bolsita`} /> : null}</div>
                   <b>{s.nombre}</b>
                   {s.estado === "agotado" ? <span className="sumar">Agotado</span>
                     : s.estado === "hoy_no_hay" ? <button className="sumar" type="button" data-slug={s.slug}>Hoy no hay · para otro día</button>
@@ -140,7 +140,7 @@ export default async function Inicio() {
                 <div className="grilla-promos">
                   {d.promos.map((pr, i) => (
                     <article key={pr.id} className="promo pop" style={{ ["--r" as string]: `${i % 2 ? 2 : -2}deg`, ["--r2" as string]: `${i % 2 ? 1 : -1}deg` }}>
-                      <div className="promo-foto">{pr.foto ? <img src={pr.foto} alt={pr.titulo} /> : null}<span className="cinta-promo">Promo vigente</span></div>
+                      <div className="promo-foto">{pr.foto ? <img loading="lazy" decoding="async" src={pr.foto} alt={pr.titulo} /> : null}<span className="cinta-promo">Promo vigente</span></div>
                       <div className="promo-texto">
                         <h3>{pr.titulo}</h3>
                         {pr.detalle ? <p>{pr.detalle}</p> : null}
@@ -163,8 +163,8 @@ export default async function Inicio() {
             <section className="xl" id="xl" data-sabor="#CFE2A4" aria-labelledby="t-xl">
               <div className="wrap">
                 <div className="fotos-xl">
-                  <figure className="pop f1"><img src="/fotos/IMG_2277.webp" alt="Helado XL de Oreo cortado al medio, con galletitas trituradas" /><figcaption>Así se ve por dentro</figcaption></figure>
-                  <figure className="pop f2"><img src="/fotos/IMG_2223.webp" alt="Helado XL cortado, cremoso por dentro" /><figcaption>Con toppings premium</figcaption></figure>
+                  <figure className="pop f1"><img loading="lazy" decoding="async" src="/fotos/IMG_2277.webp" alt="Helado XL de Oreo cortado al medio, con galletitas trituradas" /><figcaption>Así se ve por dentro</figcaption></figure>
+                  <figure className="pop f2"><img loading="lazy" decoding="async" src="/fotos/IMG_2223.webp" alt="Helado XL cortado, cremoso por dentro" /><figcaption>Con toppings premium</figcaption></figure>
                 </div>
                 <div>
                   <p className="etiqueta">Helados XL Gourmet</p>
@@ -173,7 +173,7 @@ export default async function Inicio() {
                   <ul className="lista-xl">
                     {d.xl.map((x, i) => (
                       <li key={x.id} className="pop" style={{ ["--d" as string]: `${(i * 0.1).toFixed(1)}s` }}>
-                        {x.foto ? <img src={x.foto} alt="" /> : null}
+                        {x.foto ? <img loading="lazy" decoding="async" src={x.foto} alt="" /> : null}
                         <div><b>{x.nombre}</b>{x.descripcion}{x.estado === "agotado" ? " (agotado)" : ""}</div>
                       </li>
                     ))}
@@ -253,7 +253,7 @@ export default async function Inicio() {
               <p><b>Para hoy:</b> paquetes de {paquete} de un solo sabor, según lo que haya. <b>Para otro día:</b> elegís los sabores que quieras y los mezclamos.</p>
               <p><a className="boton" href="#arma" style={{ marginTop: 6 }}>Armar mi pedido</a></p>
             </div>
-            <div className="foto-caja"><img src="/fotos/heladitos.webp" alt="Conservadora llena de heladitos ordenados por sabor" /></div>
+            <div className="foto-caja"><img loading="lazy" decoding="async" src="/fotos/heladitos.webp" alt="Conservadora llena de heladitos ordenados por sabor" /></div>
           </div>
         </section>
 
@@ -283,7 +283,7 @@ export default async function Inicio() {
         <Borde img="sello3" antes={d.puntos.length ? "pistacho" : "frutilla"} w={32} h={34} />
         <section className="hanna" id="hanna" data-sabor="#F4B9BF" aria-labelledby="t-hanna">
           <div className="wrap">
-            <figure className="foto-hanna"><img src="/fotos/hanna-circulo.webp" alt="Hanna, la golden de la familia, festejando su cumpleaños" /><span className="globo">¡Hola, soy Hanna!</span></figure>
+            <figure className="foto-hanna"><img loading="lazy" decoding="async" src="/fotos/hanna-circulo.webp" alt="Hanna, la golden de la familia, festejando su cumpleaños" /><span className="globo">¡Hola, soy Hanna!</span></figure>
             <div>
               <h2 id="t-hanna">Te presentamos a Hanna</h2>
               <p>Hanna es la golden de la familia y la inspiración detrás de Montana Helados. Si ves una patita por la web, pasó ella.</p>

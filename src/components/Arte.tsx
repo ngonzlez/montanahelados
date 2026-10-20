@@ -2,6 +2,8 @@
 // Son archivos del repo, nunca texto de usuarios, por eso se insertan tal cual.
 import arte from "@/content/arte.json";
 
+const LOGO = "/marca/logo.svg?v=1#logo";
+
 type NombreIcono = keyof typeof arte.iconos;
 
 export function Icono({ n }: { n: NombreIcono }) {
@@ -16,12 +18,11 @@ export function Banda({ i }: { i: 0 | 1 | 2 }) {
   return <span style={{ display: "contents" }} dangerouslySetInnerHTML={{ __html: arte.bandas[i] }} />;
 }
 
-/** Símbolos compartidos: logo, nudo y huella (se usan con <use href="#...">). */
+/** Símbolos compartidos: nudo y huella (se usan con <use href="#...">). El logo vive en /marca/logo.svg (lo guarda el navegador). */
 export function Simbolos() {
   return (
     <svg width="0" height="0" style={{ position: "absolute" }} aria-hidden="true">
       <defs>
-        <symbol id="logo" viewBox="40 320 1180 640" dangerouslySetInnerHTML={{ __html: arte.logo }} />
         <symbol id="nudo" viewBox="0 0 120 50">
           <path d="M50 46 L24 6 L60 26 L96 6 L70 46 Z" fill="#FFF4DC" stroke="#6B2219" strokeWidth="6" strokeLinejoin="round" />
         </symbol>
@@ -40,7 +41,7 @@ export function Simbolos() {
 export function Logo({ className, etiqueta }: { className?: string; etiqueta?: string }) {
   return (
     <svg className={className} viewBox="0 0 1180 640" role={etiqueta ? "img" : undefined} aria-label={etiqueta} aria-hidden={etiqueta ? undefined : true}>
-      <use href="#logo" width="1180" height="640" />
+      <use href={LOGO} width="1180" height="640" />
     </svg>
   );
 }
