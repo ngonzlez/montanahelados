@@ -5,6 +5,9 @@ import { Banda, Borde, Helado, Icono, Logo, MiniHelado, Simbolos } from "@/compo
 import { datosInicio } from "@/lib/inicio";
 import { gs } from "@/lib/formato";
 import { enlaceWhatsapp, mensajePromo, MENSAJE_PUNTOS_VENTA } from "@/lib/whatsapp";
+import { textosFinales } from "@/content/textos";
+import Texto from "@/components/Texto";
+import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +16,13 @@ type Red = { link: string; mostrar: string };
 
 const ABANICO: [number, number, string][] = [[-36, -18, "72%"], [-24, -12, "78%"], [-12, -6, "84%"], [0, 0, "90%"], [12, 6, "84%"], [24, 12, "78%"], [36, 18, "72%"]];
 const ICONOS_PUNTO = ["ubicacion0", "ubicacion1", "ubicacion2"] as const;
+
+export async function generateMetadata(): Promise<Metadata> {
+  const d = await datosInicio();
+  const pe = (d.ajustes.pedidos ?? {}) as { paquete_unidades?: number; sena_porcentaje?: number };
+  const t = textosFinales(d.ajustes.textos_web, { paquete: pe.paquete_unidades ?? 25, sena: pe.sena_porcentaje ?? 50 });
+  return { title: t.seo_titulo, description: t.seo_descripcion, openGraph: { title: t.seo_titulo, description: t.seo_descripcion, images: ["/compartir.jpg"], locale: "es_PY", type: "website" } };
+}
 
 export default async function Inicio() {
   const d = await datosInicio();
@@ -25,6 +35,7 @@ export default async function Inicio() {
   const reglas = (a.pedidos ?? {}) as { sena_porcentaje?: number; paquete_unidades?: number; paso_anticipado?: number; atajos_gourmet?: number[]; atajos_xl?: number[] };
   const paquete = reglas.paquete_unidades ?? 25;
   const sena = reglas.sena_porcentaje ?? 50;
+  const t = textosFinales(a.textos_web, { paquete, sena });
 
   const escG = d.escalones.filter((e) => e.producto === "gourmet").sort((x, y) => x.desde - y.desde);
   const escX = d.escalones.filter((e) => e.producto === "xl").sort((x, y) => x.desde - y.desde);
@@ -79,8 +90,8 @@ export default async function Inicio() {
         <section className="hero" data-sabor="#F4B9BF" aria-labelledby="t-hero">
           <div className="wrap">
             <div>
-              <h1 id="t-hero">Heladitos gourmet<span>hechos con leche y súper cremosos</span></h1>
-              <p className="bajada">Heladitos de leche, largos y cremosos, en paquetes de {paquete}. También hacemos Helados XL, más gruesos y con toppings premium. Cuantos más llevás, más barato te sale cada uno.</p>
+              <h1 id="t-hero">{t.hero_titulo}<span>{t.hero_subtitulo}</span></h1>
+              <p className="bajada"><Texto t={t.hero_bajada} /></p>
               <div className="acciones">
                 <a className="boton" href="#arma"><Icono n="mensaje" />Armar mi pedido</a>
                 <a className="boton claro" href="#sabores">Ver sabores</a>
@@ -111,8 +122,8 @@ export default async function Inicio() {
         <section className="sabores" id="sabores" data-sabor="#F4B9BF" aria-labelledby="t-sabores">
           <div className="wrap">
             <div className="cabeza">
-              <h2 id="t-sabores">Sabores</h2>
-              <p>Son largos (19 a 20 cm) y se entregan bien congelados. Tocá &quot;Sumar {paquete}&quot; en el sabor que te guste.</p>
+              <h2 id="t-sabores">{t.sabores_titulo}</h2>
+              <p><Texto t={t.sabores_texto} /></p>
             </div>
             <div className="grilla-sabores">
               {d.sabores.map((s, i) => (
@@ -134,8 +145,8 @@ export default async function Inicio() {
             <section className="promos" id="promos" data-sabor="#F7D977" aria-labelledby="t-promos">
               <div className="wrap">
                 <div className="cabeza">
-                  <h2 id="t-promos">Promos</h2>
-                  <p>Las promos vigentes. Tocá la que te guste y te armamos el mensaje para WhatsApp.</p>
+                  <h2 id="t-promos">{t.promos_titulo}</h2>
+                  <p><Texto t={t.promos_texto} /></p>
                 </div>
                 <div className="grilla-promos">
                   {d.promos.map((pr, i) => (
@@ -163,13 +174,13 @@ export default async function Inicio() {
             <section className="xl" id="xl" data-sabor="#CFE2A4" aria-labelledby="t-xl">
               <div className="wrap">
                 <div className="fotos-xl">
-                  <figure className="pop f1"><img loading="lazy" decoding="async" src="/fotos/IMG_2277.webp" alt="Helado XL de Oreo cortado al medio, con galletitas trituradas" /><figcaption>Así se ve por dentro</figcaption></figure>
-                  <figure className="pop f2"><img loading="lazy" decoding="async" src="/fotos/IMG_2223.webp" alt="Helado XL cortado, cremoso por dentro" /><figcaption>Con toppings premium</figcaption></figure>
+                  <figure className="pop f1"><img loading="lazy" decoding="async" src="/fotos/IMG_2277.webp" alt="Helado XL de Oreo cortado al medio, con galletitas trituradas" /><figcaption>{t.xl_pie1}</figcaption></figure>
+                  <figure className="pop f2"><img loading="lazy" decoding="async" src="/fotos/IMG_2223.webp" alt="Helado XL cortado, cremoso por dentro" /><figcaption>{t.xl_pie2}</figcaption></figure>
                 </div>
                 <div>
-                  <p className="etiqueta">Helados XL Gourmet</p>
-                  <h2 id="t-xl" style={{ fontSize: "clamp(40px,6vw,72px)", marginTop: 10 }}>Más gruesos, con toppings premium</h2>
-                  <p style={{ fontSize: 21, marginTop: 12 }}>Una presentación más gruesa que la tradicional, con toppings premium. Hechos a mano.</p>
+                  <p className="etiqueta">{t.xl_etiqueta}</p>
+                  <h2 id="t-xl" style={{ fontSize: "clamp(40px,6vw,72px)", marginTop: 10 }}>{t.xl_titulo}</h2>
+                  <p style={{ fontSize: 21, marginTop: 12 }}><Texto t={t.xl_texto} /></p>
                   <ul className="lista-xl">
                     {d.xl.map((x, i) => (
                       <li key={x.id} className="pop" style={{ ["--d" as string]: `${(i * 0.1).toFixed(1)}s` }}>
@@ -195,8 +206,8 @@ export default async function Inicio() {
         <section className="arma" id="arma" data-sabor="#F4B9BF" aria-labelledby="t-arma">
           <div className="wrap">
             <div className="cabeza">
-              <h2 id="t-arma">Armá tu pedido</h2>
-              <p><b>1.</b> Elegí para cuándo. <b>2.</b> Tocá <b>+</b> en los sabores que querés. <b>3.</b> Tocá &quot;Mandar mi pedido&quot; y se abre WhatsApp con todo escrito.</p>
+              <h2 id="t-arma">{t.arma_titulo}</h2>
+              <p><Texto t={t.arma_texto} /></p>
             </div>
             <Armador
               sabores={saboresArmador}
@@ -219,20 +230,20 @@ export default async function Inicio() {
         </svg>
         <section className="pedir" id="pedir" data-sabor="#CDBBE8" aria-labelledby="t-pedir">
           <div className="wrap">
-            <div className="cabeza"><h2 id="t-pedir">Cómo pedir</h2><p>Así organizamos cada pedido para que tus heladitos lleguen bien congelados.</p></div>
+            <div className="cabeza"><h2 id="t-pedir">{t.pedir_titulo}</h2><p><Texto t={t.pedir_texto} /></p></div>
             <div className="pasos" id="pasos">
               <div className="riel" aria-hidden="true" />
               <div className="viajero" id="viajero" aria-hidden="true"><Helado color="#F4B9BF" /></div>
               <ol>
-                <li className="paso pop"><Icono n="mensaje" /><div><h3>Escribinos</h3><p>Armá tu pedido acá arriba, o mandanos un WhatsApp con los sabores y cuántos querés.</p></div></li>
-                <li className="paso pop"><Icono n="reloj" /><div><h3>¿Para hoy o para otro día?</h3><p>Para hoy: paquetes de {paquete} de un solo sabor y los XL. Para otro día (pedís 1 día antes): elegís los sabores que quieras y la cantidad que quieras.</p></div></li>
-                <li className="paso pop"><Icono n="sena" /><div><h3>Seña del {sena} %</h3><p>Pagás {sena === 50 ? "la mitad" : `el ${sena} %`} y tu pedido queda anotado. El resto lo pagás por transferencia antes de que salga el pedido. Si cancelás, la seña no se devuelve.</p></div></li>
-                <li className="paso pop"><Icono n="conservadora" /><div><h3>Pasás a buscar o te lo mandamos</h3><p>Podés pasar a buscar (traé tu conservadora) o te lo enviamos por Bolt. El envío se le paga al conductor; los heladitos se pagan antes, por transferencia.</p></div></li>
-                <li className="paso pop"><Icono n="copo" /><div><h3>Cuidalos del calor</h3><p>Salen bien congelados. Son de leche: no dejes que se descongelen del todo, porque se cortan. Si se ablandan en el viaje, que no pierdan todo el frío.</p></div></li>
+                <li className="paso pop"><Icono n="mensaje" /><div><h3>{t.paso1_titulo}</h3><p><Texto t={t.paso1_texto} /></p></div></li>
+                <li className="paso pop"><Icono n="reloj" /><div><h3>{t.paso2_titulo}</h3><p><Texto t={t.paso2_texto} /></p></div></li>
+                <li className="paso pop"><Icono n="sena" /><div><h3>{t.paso3_titulo}</h3><p><Texto t={t.paso3_texto} /></p></div></li>
+                <li className="paso pop"><Icono n="conservadora" /><div><h3>{t.paso4_titulo}</h3><p><Texto t={t.paso4_texto} /></p></div></li>
+                <li className="paso pop"><Icono n="copo" /><div><h3>{t.paso5_titulo}</h3><p><Texto t={t.paso5_texto} /></p></div></li>
               </ol>
             </div>
-            <p className="aviso"><Icono n="ubicacion_claro" /><span>Pedinos la ubicación exacta antes de hacer el pago.</span></p>
-            <p className="aviso claro"><Icono n="mensaje" /><span><b>¿Necesitás factura electrónica?</b> Pasanos nombre y apellido, RUC y correo. La factura te llega al correo.</span></p>
+            <p className="aviso"><Icono n="ubicacion_claro" /><span><Texto t={t.aviso_ubicacion} /></span></p>
+            <p className="aviso claro"><Icono n="mensaje" /><span><Texto t={t.aviso_factura} /></span></p>
           </div>
         </section>
 
@@ -240,9 +251,9 @@ export default async function Inicio() {
         <section className="reventa" id="reventa" data-sabor="#F4B9BF" aria-labelledby="t-reventa">
           <div className="wrap">
             <div className="texto">
-              <p className="etiqueta">Para kioscos y almacenes</p>
-              <h2 id="t-reventa" style={{ fontSize: "clamp(44px,7vw,78px)", marginTop: 10 }}>Reventa por paquete de {paquete}</h2>
-              <p>Cuantos más heladitos llevás, menos pagás por cada uno.</p>
+              <p className="etiqueta">{t.reventa_etiqueta}</p>
+              <h2 id="t-reventa" style={{ fontSize: "clamp(44px,7vw,78px)", marginTop: 10 }}>{t.reventa_titulo}</h2>
+              <p><Texto t={t.reventa_texto} /></p>
               <div className="escalones">
                 {escG.map((e, i) => (
                   <div key={e.desde} className="escalon pop" style={i === 0 ? { ["--r" as string]: "-6deg", ["--r2" as string]: "-2deg" } : undefined}>
@@ -250,7 +261,7 @@ export default async function Inicio() {
                   </div>
                 ))}
               </div>
-              <p><b>Para hoy:</b> paquetes de {paquete} de un solo sabor, según lo que haya. <b>Para otro día:</b> elegís los sabores que quieras y los mezclamos.</p>
+              <p><Texto t={t.reventa_nota} /></p>
               <p><a className="boton" href="#arma" style={{ marginTop: 6 }}>Armar mi pedido</a></p>
             </div>
             <div className="foto-caja"><img loading="lazy" decoding="async" src="/fotos/heladitos.webp" alt="Conservadora llena de heladitos ordenados por sabor" /></div>
@@ -263,8 +274,8 @@ export default async function Inicio() {
             <section className="puntos" id="puntos" data-sabor="#CFE2A4" aria-labelledby="t-puntos">
               <div className="wrap">
                 <div className="cabeza">
-                  <h2 id="t-puntos">¿Querés uno solo?</h2>
-                  <p>Compralos sueltos en estos locales. Tocá el que te queda más cerca y se abre el mapa.</p>
+                  <h2 id="t-puntos">{t.puntos_titulo}</h2>
+                  <p><Texto t={t.puntos_texto} /></p>
                 </div>
                 <p style={{ margin: "-14px 0 28px" }}><a className="boton" href={enlaceWhatsapp(wa.valor, MENSAJE_PUNTOS_VENTA)} target="_blank" rel="noopener"><Icono n="mensaje" />Consultar disponibilidad por WhatsApp</a></p>
                 <div className="grilla-puntos">
@@ -283,10 +294,10 @@ export default async function Inicio() {
         <Borde img="sello3" antes={d.puntos.length ? "pistacho" : "frutilla"} w={32} h={34} />
         <section className="hanna" id="hanna" data-sabor="#F4B9BF" aria-labelledby="t-hanna">
           <div className="wrap">
-            <figure className="foto-hanna"><img loading="lazy" decoding="async" src="/fotos/hanna-circulo.webp" alt="Hanna, la golden de la familia, festejando su cumpleaños" /><span className="globo">¡Hola, soy Hanna!</span></figure>
+            <figure className="foto-hanna"><img loading="lazy" decoding="async" src="/fotos/hanna-circulo.webp" alt="Hanna, la golden de la familia, festejando su cumpleaños" /><span className="globo">{t.hanna_globo}</span></figure>
             <div>
-              <h2 id="t-hanna">Te presentamos a Hanna</h2>
-              <p>Hanna es la golden de la familia y la inspiración detrás de Montana Helados. Si ves una patita por la web, pasó ella.</p>
+              <h2 id="t-hanna">{t.hanna_titulo}</h2>
+              <p><Texto t={t.hanna_texto} /></p>
               <div className="huellas" id="huellas" aria-hidden="true">
                 {Array.from({ length: 7 }, (_, i) => (
                   <svg key={i} viewBox="0 0 64 64" style={{ left: `${4 + i * 13}%`, top: `${(i % 2) * 24}px`, ["--rot" as string]: `${(-1) ** i * 10 + 8}deg` }} fill="#B9743F"><use href="#huella" /></svg>
@@ -303,7 +314,7 @@ export default async function Inicio() {
         <div className="wrap">
           <div>
             <Logo className="logo-pie" etiqueta="Montana Helados" />
-            <p style={{ marginTop: 18, fontSize: 18, maxWidth: "24em" }}>Heladitos gourmet hechos con leche, en San Lorenzo.</p>
+            <p style={{ marginTop: 18, fontSize: 18, maxWidth: "24em" }}><Texto t={t.pie_texto} /></p>
             <p style={{ marginTop: 20 }}><a className="boton" href={perfil} target="_blank" rel="noopener"><Icono n="mensaje" />Escribinos por WhatsApp</a></p>
           </div>
           <dl>
@@ -316,8 +327,8 @@ export default async function Inicio() {
                 {tt ? <a href={tt.link} target="_blank" rel="noopener">TikTok {tt.mostrar}</a> : null}
               </dd></div>
             ) : null}
-            {ubic ? <div><dt>Dónde estamos</dt><dd>San Lorenzo, barrio Reducto. <a href={ubic.google_maps} target="_blank" rel="noopener">Cómo llegar</a></dd></div> : null}
-            <div><dt>Entregas</dt><dd>Pasás a buscar o te lo mandamos por Bolt</dd></div>
+            {ubic ? <div><dt>Dónde estamos</dt><dd>{t.pie_ubicacion} <a href={ubic.google_maps} target="_blank" rel="noopener">Cómo llegar</a></dd></div> : null}
+            <div><dt>Entregas</dt><dd>{t.pie_entregas}</dd></div>
           </dl>
           <p className="nota">
             <button type="button" className="copiar" id="ver-intro" style={{ margin: "0 10px 0 0" }}>Ver la intro de nuevo</button>

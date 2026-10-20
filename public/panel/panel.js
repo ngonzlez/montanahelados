@@ -12,7 +12,7 @@
   const ESTADOS_PEDIDO = [['nuevo', 'Nuevo'], ['confirmado', 'Confirmado'], ['sena_recibida', 'Seña recibida'], ['entregado', 'Entregado'], ['cancelado', 'Cancelado']];
   const NOMBRE_PEDIDO = Object.fromEntries(ESTADOS_PEDIDO);
   const PRODUCTO = { gourmet: 'Heladito', xl: 'Helado XL' };
-  const NOMBRES = { inicio: 'Inicio', pedidos: 'Pedidos', sabores: 'Sabores', xl: 'Helados XL', precios: 'Precios por cantidad', promos: 'Promos', puntos: 'Puntos de venta', ajustes: 'Ajustes', papelera: 'Papelera' };
+  const NOMBRES = { inicio: 'Inicio', pedidos: 'Pedidos', sabores: 'Sabores', xl: 'Helados XL', precios: 'Precios por cantidad', promos: 'Promos', puntos: 'Puntos de venta', textos: 'Textos de la web', ajustes: 'Ajustes', papelera: 'Papelera' };
 
   let db = null;          // estado del panel (todo menos pedidos)
   let ped = null;         // página actual de pedidos
@@ -153,6 +153,21 @@
       <td class="full"><div class="acciones"><button class="btn chico" data-editar="puntos" data-id="${p.id}">Editar</button><button class="btn chico peligro" data-borrar="puntos" data-id="${p.id}">Eliminar</button></div></td></tr>`).join('')}
       </tbody></table>${db.puntos.length ? '' : '<div class="vacio">No hay locales cargados. Sin locales, la sección no aparece en la web.</div>'}</div>`;
     },
+    textos() {
+      const campoTexto = (c) => {
+        const valor = c.valor || c.original;
+        const input = c.tipo === 'parrafo'
+          ? `<textarea id="t-${c.clave}" name="${c.clave}" rows="${Math.min(6, Math.ceil(c.max / 90) + 1)}" maxlength="${c.max}" data-original="${esc(c.original)}">${esc(valor)}</textarea>`
+          : `<input id="t-${c.clave}" name="${c.clave}" type="text" maxlength="${c.max}" value="${esc(valor)}" data-original="${esc(c.original)}">`;
+        return `<div class="campo campo-texto${c.valor && c.valor !== c.original ? ' cambiado' : ''}"><label for="t-${c.clave}">${esc(c.etiqueta)}</label>${input}
+          <small class="pie-texto"><span data-cuenta="${c.clave}">${valor.length}</span>/${c.max}${c.valor && c.valor !== c.original ? ` · <button type="button" class="enlace" data-original="${c.clave}">Volver al original</button>` : ''}</small></div>`;
+      };
+      return `<div class="cabeza"><h2>Textos de la web</h2><a class="btn chico" href="/" target="_blank" rel="noopener">Ver la web</a></div>
+      <p class="previa">Cambiá los títulos y textos de cada parte de la web. Lo que dejes vacío vuelve al texto original. Para que algo salga en <b>negrita</b>, ponelo entre dos asteriscos: **así**.</p>
+      <form id="form-textos" novalidate>
+      ${db.textos.map((g) => `<details class="bloque bloque-textos" ${g.id === 'inicio' ? 'open' : ''}><summary><h3>${esc(g.titulo)}</h3><span class="contador">${g.campos.filter((c) => c.valor && c.valor !== c.original).length || ''}</span></summary>${g.campos.map(campoTexto).join('')}</details>`).join('')}
+      <div class="guardar-fijo"><button class="btn pri" type="submit">Guardar textos</button></div></form>`;
+    },
     ajustes() {
       const a = db.ajustes;
       return `<div class="cabeza"><h2>Ajustes</h2></div><form id="form-ajustes" novalidate>
@@ -287,6 +302,7 @@
     if (d.accion === 'prueba') { if ($('#f-email').value.trim() !== db.ajustes.email) return avisar('Primero guardá los ajustes con el email nuevo'); return hacer({ accion: 'email_prueba' }, { recargar: false }); }
     if (d.accion === 'copiar-pago') { const v = $('#f-pago').value; try { navigator.clipboard.writeText(v).then(() => avisar('Copiado'), () => {}); } catch (err) {} return; }
     if (d.accion === 'cambiar-clave') return cambiarClave();
+    if (t.matches('button[data-original]')) { const el = cont.querySelector('#t-' + d.original); el.value = el.dataset.original; el.dispatchEvent(new Event('input', { bubbles: true })); el.focus(); return avisar('Volvió al original. Tocá "Guardar textos".'); }
     if (d.nuevo) return formulario(d.nuevo);
     if (d.editar) return formulario(d.editar, buscar(d.editar, d.id));
     if (d.borrar) { const it = buscar(d.borrar, d.id); const nom = it.nombre || it.titulo; return confirmar(`¿Eliminar "${nom}"? Va a la papelera y lo podés restaurar durante 30 días.`, () => hacer({ accion: 'borrar', lista: d.borrar, id: +d.id })); }
@@ -311,6 +327,8 @@
   });
   let tBusca;
   cont.addEventListener('input', (e) => {
+    const n = e.target.name && cont.querySelector(`[data-cuenta="${e.target.name}"]`);
+    if (n) n.textContent = e.target.value.length;
     if (e.target.dataset.buscar === undefined) return;
     busqueda = e.target.value.toLowerCase(); pagina = 1;
     const reponer = () => { const i = cont.querySelector('[data-buscar]'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } };
@@ -318,6 +336,18 @@
     else { render(); reponer(); }
   });
   cont.addEventListener('submit', async (e) => {
+    if (e.target.id === 'form-textos') {
+      e.preventDefault();
+      const valores = {};
+      e.target.querySelectorAll('[data-original]:is(input,textarea)').forEach((el) => {
+        const v = el.value.trim();
+        valores[el.name] = v === el.dataset.original.trim() ? '' : v; // igual al original = no se guarda
+      });
+      const abiertos = [...e.target.querySelectorAll('details[open] summary h3')].map((h) => h.textContent);
+      await hacer({ accion: 'textos', valores });
+      cont.querySelectorAll('details.bloque-textos').forEach((d) => { if (abiertos.includes(d.querySelector('h3').textContent)) d.open = true; });
+      return;
+    }
     if (e.target.id !== 'form-ajustes') return;
     e.preventDefault();
     const f = new FormData(e.target), g = (k) => String(f.get(k) || '').trim();

@@ -27,6 +27,8 @@ export default async function Panel() {
           <button data-m="precios">Precios por cantidad</button>
           <button data-m="promos">Promos</button>
           <button data-m="puntos">Puntos de venta</button>
+          <div className="grupo">Contenido</div>
+          <button data-m="textos">Textos de la web</button>
           <div className="grupo">Sistema</div>
           <button data-m="ajustes">Ajustes</button>
           <button data-m="papelera">Papelera <span className="n" id="n-papelera" /></button>

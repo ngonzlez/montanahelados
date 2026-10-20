@@ -87,7 +87,7 @@ Al arrancar, el contenedor corre `migrate`, `seed` y después la app. La semilla
 
 ## Panel de la dueña
 
-`/gestionar` (login con email y contraseña). Inicio con pedidos nuevos y de mañana, botón "Todo disponible"; pedidos con filtros, búsqueda y paginado en el servidor, estado y notas; sabores y Helados XL con estado (Disponible, Hoy no hay, Agotado, Oculto), cambio en lote y fotos; precios por cantidad; promos con foto, fechas, terminar y duplicar; puntos de venta; ajustes (email de avisos con prueba, WhatsApp, redes, horario, mapa, seña, datos de pago privados, contraseña); papelera de 30 días.
+`/gestionar` (login con email y contraseña). Inicio con pedidos nuevos y de mañana, botón "Todo disponible"; pedidos con filtros, búsqueda y paginado en el servidor, estado y notas; sabores y Helados XL con estado (Disponible, Hoy no hay, Agotado, Oculto), cambio en lote y fotos; precios por cantidad; promos con foto, fechas, terminar y duplicar; puntos de venta; textos de la web (títulos y textos de cada sección, y cómo aparece en Google; vacío = texto original); ajustes (email de avisos con prueba, WhatsApp, redes, horario, mapa, seña, datos de pago privados, contraseña); papelera de 30 días.
 
 - Sin registro público: el único usuario lo crea la semilla.
 - Recuperar contraseña por email (enlace de un uso, vence en 1 hora). Necesita Resend configurado.

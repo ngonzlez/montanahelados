@@ -150,3 +150,16 @@ select.inline{width:auto}
 .campo input[type=color]{min-height:46px;width:80px;padding:4px}
 .previa-foto{width:80px;height:80px;object-fit:contain;border:2px solid var(--choco);border-radius:12px;background:var(--vainilla)}
 .detalle-pedido{display:grid;gap:4px}
+
+/* textos de la web */
+.bloque-textos{max-width:760px}
+.bloque-textos summary{display:flex;align-items:center;gap:10px;cursor:pointer;list-style:none;min-height:44px}
+.bloque-textos summary::-webkit-details-marker{display:none}
+.bloque-textos summary::after{content:"+";margin-left:auto;font:800 24px var(--texto)}
+.bloque-textos[open] summary::after{content:"−"}
+.bloque-textos summary .contador:empty{display:none}
+.bloque-textos summary .contador{background:var(--mburu);border:2px solid var(--choco);border-radius:999px;padding:0 8px;font-size:13px}
+.campo-texto.cambiado label::after{content:" · cambiado";color:var(--suave);font-size:13px}
+.pie-texto{display:flex;gap:6px;align-items:center}
+.enlace{background:none;border:0;padding:0;font-weight:800;text-decoration:underline;cursor:pointer;color:var(--choco)}
+.guardar-fijo{position:sticky;bottom:0;padding:12px 0;background:var(--vainilla);max-width:760px}

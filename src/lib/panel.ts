@@ -6,6 +6,7 @@ import { db, schema as s } from "@/db";
 import { hoyISO, sumarDias } from "./fechas";
 import { telefonoVisible } from "./formato";
 import { enviarEmail, plantillaPrueba } from "./email";
+import { esClaveTexto, maxTexto, textosParaPanel, GRUPOS_TEXTOS } from "@/content/textos";
 
 type Usuario = { id: string; email: string; name: string };
 const ESTADOS_PRODUCTO = ["disponible", "hoy_no_hay", "agotado", "oculto"] as const;
@@ -44,6 +45,7 @@ export async function leerEstado() {
       sena: a.pedidos?.sena_porcentaje ?? 50,
       pago: a.datos_pago_privado ?? "",
     },
+    textos: textosParaPanel(a.textos_web, { paquete: a.pedidos?.paquete_unidades ?? 25, sena: a.pedidos?.sena_porcentaje ?? 50 }),
     resumen: { nuevos: nuevos[0].n, manana: manana[0].n },
     papelera: borrados,
   };
@@ -155,6 +157,7 @@ export const accion = z.discriminatedUnion("accion", [
     sena: z.number().int().min(0).max(100), pago: texto(600),
   }),
   z.object({ accion: z.literal("email_prueba") }),
+  z.object({ accion: z.literal("textos"), valores: z.record(z.string(), z.string().max(400)) }),
 ]);
 export type Accion = z.infer<typeof accion>;
 
@@ -322,6 +325,21 @@ export async function ejecutar(a: Accion, u: Usuario): Promise<Resultado> {
       await guardarAjuste("datos_pago_privado", a.pago);
       await auditar(u, "ajustes", null, "guardar", null, "ajustes");
       return { ok: true, aviso: "Ajustes guardados" };
+    }
+    case "textos": {
+      const limpio: Record<string, string> = {};
+      for (const [k, v] of Object.entries(a.valores)) {
+        if (!esClaveTexto(k)) return { ok: false, error: "Hay un texto que no reconocemos." };
+        const t = v.replace(/\r\n?/g, "\n").replace(/[<>]/g, "").trim();
+        if (t.length > maxTexto(k)) {
+          const campo = GRUPOS_TEXTOS.flatMap((g) => g.campos).find((c) => c.clave === k)!;
+          return { ok: false, error: `"${campo.etiqueta}" tiene más de ${maxTexto(k)} letras.` };
+        }
+        if (t) limpio[k] = t; // vacío = vuelve al texto original
+      }
+      await guardarAjuste("textos_web", limpio);
+      await auditar(u, "ajustes", null, "textos_web", null, Object.keys(limpio).join(", ") || "todos originales");
+      return { ok: true, aviso: "Textos guardados. Ya se ven en la web." };
     }
     case "email_prueba": {
       const [fila] = await db.select().from(s.ajustes).where(eq(s.ajustes.clave, "email_avisos"));
