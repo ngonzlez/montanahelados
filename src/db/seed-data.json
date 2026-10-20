@@ -1,0 +1,262 @@
+{
+  "version": "0.3.0",
+  "regla": "Solo datos reales del cliente. Lo que falta va en por_confirmar y como pregunta en el PRD.",
+  "ajustes": {
+    "whatsapp": {
+      "valor": "595986759890",
+      "mostrar": "0986 759 890",
+      "link": "https://wa.me/595986759890",
+      "link_perfil": "https://wa.me/message/ZNLFMXM3V5HJG1"
+    },
+    "instagram": {
+      "link": "https://www.instagram.com/montanahelados_",
+      "mostrar": "@montanahelados_"
+    },
+    "tiktok": {
+      "link": "https://www.tiktok.com/@dianariverosc",
+      "mostrar": "@dianariverosc"
+    },
+    "ubicacion": {
+      "texto": "San Lorenzo, barrio Reducto.",
+      "google_maps": "https://maps.app.goo.gl/WwgGVnkJDaCRPTDz7",
+      "nota": "Igual se pide confirmar la ubicación antes de pagar"
+    },
+    "horarios": "Lunes a sábado, de 10 a 17 h",
+    "pedidos": {
+      "sena_porcentaje": 50,
+      "anticipacion_horas": 24,
+      "paquete_unidades": 25,
+      "paso_anticipado": 5,
+      "atajos_gourmet": [
+        25,
+        50
+      ],
+      "atajos_xl": [
+        5,
+        30
+      ],
+      "sena_aplica": "todos los pedidos (hoy, otro día, XL)",
+      "sena_reembolsable": false,
+      "pedido_minimo": 0,
+      "escalones_suman_sabores": true
+    },
+    "entrega": {
+      "retiro": "Podés pasar a buscar. Traé tu conservadora.",
+      "bolt": "Los envíos se realizan por Bolt. El costo del envío se abona directamente al conductor, y el pago de los heladitos se realiza previamente por transferencia bancaria. De esta manera, el conductor únicamente recibe el pago correspondiente al traslado."
+    },
+    "datos_pago": {
+      "nota": "Solo por WhatsApp, nunca en la web"
+    },
+    "factura_electronica": {
+      "datos": [
+        "Nombre y apellido",
+        "RUC",
+        "Correo electrónico"
+      ],
+      "texto": "Una vez emitida, la factura te llega directamente al correo que nos indiques."
+    }
+  },
+  "sabores": [
+    {
+      "slug": "mburukuja",
+      "nombre": "Mburukuja",
+      "color": "#F7D977",
+      "foto": "fotos/heladitosnuevapresentacion → docs/referencias/web-demo/unidades-v2/g-mburukuja.webp",
+      "orden": 1,
+      "estado": "disponible"
+    },
+    {
+      "slug": "dulce-de-leche",
+      "nombre": "Dulce de Leche",
+      "color": "#EBCB9F",
+      "foto": "fotos/heladitosnuevapresentacion → docs/referencias/web-demo/unidades-v2/g-dulce-de-leche.webp",
+      "orden": 2,
+      "estado": "disponible"
+    },
+    {
+      "slug": "chocolate",
+      "nombre": "Chocolate",
+      "color": "#DDBBA4",
+      "foto": "fotos/heladitosnuevapresentacion → docs/referencias/web-demo/unidades-v2/g-chocolate.webp",
+      "orden": 3,
+      "estado": "disponible"
+    },
+    {
+      "slug": "menta",
+      "nombre": "Menta",
+      "color": "#CFE8D6",
+      "foto": "fotos/heladitosnuevapresentacion → docs/referencias/web-demo/unidades-v2/g-menta.webp",
+      "orden": 4,
+      "estado": "disponible"
+    },
+    {
+      "slug": "frutilla",
+      "nombre": "Frutilla",
+      "color": "#F4B9BF",
+      "foto": "fotos/heladitosnuevapresentacion → docs/referencias/web-demo/unidades-v2/g-frutilla.webp",
+      "orden": 5,
+      "estado": "disponible"
+    },
+    {
+      "slug": "crema-americana",
+      "nombre": "Crema Americana",
+      "color": "#F6E7C8",
+      "foto": "fotos/heladitosnuevapresentacion → docs/referencias/web-demo/unidades-v2/g-crema-americana.webp",
+      "orden": 6,
+      "estado": "disponible"
+    },
+    {
+      "slug": "pistacho",
+      "nombre": "Pistacho",
+      "color": "#CFE2A4",
+      "foto": "fotos/heladitosnuevapresentacion → docs/referencias/web-demo/unidades-v2/g-pistacho.webp",
+      "orden": 7,
+      "estado": "disponible"
+    },
+    {
+      "slug": "leche-condensada",
+      "nombre": "Leche Condensada",
+      "color": "#F3E6C6",
+      "foto": "fotos/heladitosnuevapresentacion → docs/referencias/web-demo/unidades-v2/g-leche-condensada.webp",
+      "orden": 8,
+      "estado": "disponible"
+    },
+    {
+      "slug": "uva",
+      "nombre": "Uva",
+      "color": "#CDBBE8",
+      "foto": "fotos/heladitosnuevapresentacion → docs/referencias/web-demo/unidades-v2/g-uva.webp",
+      "orden": 9,
+      "estado": "disponible"
+    }
+  ],
+  "helados_xl": [
+    {
+      "slug": "banana-split",
+      "nombre": "Banana Split",
+      "descripcion": "con raspas de dulce de leche",
+      "foto": "fotos/heladitosnuevapresentacion → docs/referencias/web-demo/unidades-v2/xl-banana.webp",
+      "estado": "disponible"
+    },
+    {
+      "slug": "mburukuja",
+      "nombre": "Mburukuja",
+      "descripcion": "con las pulpitas",
+      "foto": "fotos/heladitosnuevapresentacion → docs/referencias/web-demo/unidades-v2/xl-mburukuja.webp",
+      "estado": "disponible"
+    },
+    {
+      "slug": "oreo",
+      "nombre": "Oreo",
+      "descripcion": "con trozos de Oreo por dentro",
+      "foto": "fotos/heladitosnuevapresentacion → docs/referencias/web-demo/unidades-v2/xl-oreo.webp",
+      "estado": "disponible"
+    }
+  ],
+  "escalones_precio": [
+    {
+      "producto": "gourmet",
+      "desde": 1,
+      "precio": 3000
+    },
+    {
+      "producto": "gourmet",
+      "desde": 50,
+      "precio": 2500
+    },
+    {
+      "producto": "gourmet",
+      "desde": 100,
+      "precio": 2000
+    },
+    {
+      "producto": "xl",
+      "desde": 1,
+      "precio": 7000
+    },
+    {
+      "producto": "xl",
+      "desde": 30,
+      "precio": 5000
+    }
+  ],
+  "promos": [
+    {
+      "titulo": "Desde 100 heladitos, G. 2.000 cada uno",
+      "detalle": "Solo heladitos gourmet, en paquetes de 25 unidades. Ideal para kioscos y almacenes.",
+      "foto": "fotos/heladitosnuevapresentacion/Nueve helados en tubos sellados.png",
+      "texto_whatsapp": "Desde 100 heladitos, G. 2.000 cada uno",
+      "desde": "2026-10-19",
+      "hasta": null,
+      "visible": true
+    }
+  ],
+  "textos": {
+    "hero_titulo": "Heladitos gourmet",
+    "hero_subtitulo": "hechos con leche y súper cremosos",
+    "hero_bajada": "Paquetes de 25 heladitos para reventa y Helados XL con ingredientes extra. Cuantos más llevás, mejor el precio.",
+    "producto": "Cada heladito mide de 19 a 20 cm y se entrega bien congelado.",
+    "hanna": "Hanna es la golden de la familia y la inspiración detrás de Montana Helados. Si ves una patita por la web, pasó ella.",
+    "xl": "Más gruesos, con toppings premium. Una presentación más gruesa que la tradicional, con toppings premium. Hechos a mano.",
+    "xl_titulo": "Más gruesos, con toppings premium"
+  },
+  "preguntas_frecuentes": [
+    {
+      "pregunta": "¿Puedo mezclar sabores?",
+      "respuesta": "Sí, si pedís con 24 horas o más de anticipación. Para el mismo día tenemos paquetes de 25 de un solo sabor."
+    },
+    {
+      "pregunta": "¿Cuánto tiempo antes tengo que pedir?",
+      "respuesta": "Agendamos con un mínimo de 24 horas. Para hoy, consultá los paquetes disponibles."
+    },
+    {
+      "pregunta": "¿Cómo pago?",
+      "respuesta": "Con una seña del 50 % para agendar. El resto por transferencia el día de la entrega, antes de que el pedido salga."
+    },
+    {
+      "pregunta": "¿Hacen envíos?",
+      "respuesta": "Sí, por Bolt Envíos. El viaje se le paga al conductor. Te recomendamos pedir el Bolt vos mismo."
+    },
+    {
+      "pregunta": "¿Cómo los conservo?",
+      "respuesta": "Son a base de leche y se entregan congelados. Si retirás, traé una conservadora."
+    },
+    {
+      "pregunta": "¿Hacen factura electrónica?",
+      "respuesta": "Sí. Pasanos nombre y apellido, RUC y correo. La factura te llega al correo."
+    }
+  ],
+  "condiciones": [
+    "Agendamos pedidos con un mínimo de 24 horas de anticipación.",
+    "Para agendar pedimos una seña del 50 % del total.",
+    "Pedidos del día: paquetes de 25 de un solo sabor según disponibilidad.",
+    "Si el pedido sale por Bolt Envíos, el viaje se abona al conductor y el importe de los heladitos debe estar cancelado por transferencia antes de que salga del local.",
+    "Solicitá nuestra ubicación antes de realizar el pago.",
+    "Si cancelás el pedido, la seña no se devuelve."
+  ],
+  "por_confirmar": [
+    "email que recibe los avisos de pedidos"
+  ],
+  "conservacion": "Nuestros heladitos salen del local bien congelados. Como son elaborados a base de leche, es importante mantenerlos siempre a una temperatura adecuada. No deben descongelarse por completo para volver a congelarse, ya que esto puede afectar su calidad y hacer que la mezcla se corte. Si comienzan a ablandarse durante el traslado, es importante evitar que pierdan por completo el frío.",
+  "puntos_de_venta": [
+    {
+      "nombre": "Acai Vip Reducto",
+      "mapa": "https://maps.app.goo.gl/sT8aR392NQq3mgXU8",
+      "visible": true
+    },
+    {
+      "nombre": "Açai Vip Sinalco",
+      "mapa": "https://maps.app.goo.gl/rJFKf9uMWoyhxwzaA",
+      "visible": true
+    },
+    {
+      "nombre": "Punto Helado",
+      "mapa": "https://maps.app.goo.gl/Q2d8AnGdAxnnry659",
+      "visible": true
+    }
+  ],
+  "hanna": {
+    "foto": "fotos/hanna.jpeg (recorte circular docs/referencias/web-demo/hanna-circulo.webp)"
+  },
+  "mostrar_duena": false
+}

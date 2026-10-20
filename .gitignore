@@ -1,0 +1,33 @@
+# dependencias y build
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+coverage/
+test-results/
+playwright-report/
+
+# secretos
+.env
+.env.*
+!.env.example
+
+# material del estudio (no va a Git)
+docs/
+fotos/
+fotos-jpg/
+iconos/
+logo-propuesta/
+prototipo/
+videos/
+Claude outputs/
+*.gif
+*.jpeg
+logo.jpg
+logo.png
+catalogo.md
+detalle
+detalle2
+.DS_Store
+dist/

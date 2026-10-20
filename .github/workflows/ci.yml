@@ -1,0 +1,37 @@
+name: CI
+on:
+  push:
+    branches: [main, staging]
+  pull_request:
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: montana
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/montana
+      NEXT_TELEMETRY_DISABLED: 1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - run: npm run build:scripts
+      - name: Migraciones y semilla contra Postgres
+        run: node dist/migrate.mjs && node dist/seed.mjs && node dist/seed.mjs
+      - name: Dependencias sin vulnerabilidades altas
+        run: npm audit --omit=dev --audit-level=high
