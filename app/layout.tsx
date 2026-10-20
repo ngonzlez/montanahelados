@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { display, texto } from "@/fuentes";
 import "./sitio.css";
 
-const URL_BASE = process.env.BETTER_AUTH_URL ?? "https://montanahelados.nogashopp.com";
+const URL_BASE = process.env.SITE_URL ?? "https://montanahelados.nogashopp.com";
 
 export const metadata: Metadata = {
   metadataBase: new URL(URL_BASE),

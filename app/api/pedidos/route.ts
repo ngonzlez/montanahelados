@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
     return { id: p.id, codigo };
   });
 
-  const numero = process.env.WHATSAPP_NUMERO ?? ajustes.whatsapp?.valor ?? "595986759890";
+  const numero = ajustes.whatsapp?.valor ?? "595986759890";
   const texto = mensajePedido({ modalidad: e.modalidad, lineas: v.lineas, calculo, senaPorcentaje: senaPct, entrega: e.entrega, fechaEntrega: v.fechaEntrega, nombre: e.nombre, codigo: guardado.codigo, factura });
   return NextResponse.json({ ok: true, codigo: guardado.codigo, enlace: enlaceWhatsapp(numero, texto), aviso: AVISO_ABIERTO, calculo });
 }
