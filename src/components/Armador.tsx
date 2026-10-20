@@ -37,6 +37,7 @@ export default function Armador(p: Props) {
   const [enviando, setEnviando] = useState(false);
   const [listo, setListo] = useState<{ codigo: string; enlace: string } | null>(null);
   const [copiado, setCopiado] = useState(false);
+  const [trampa, setTrampa] = useState("");
   const [minFecha, setMinFecha] = useState("");
   const modoRef = useRef(modo);
   modoRef.current = modo;
@@ -128,9 +129,17 @@ export default function Armador(p: Props) {
     setErrores([]);
     if (!nombre.trim()) return setErrores(["Escribí tu nombre o el de tu negocio."]);
     if (modo === "otro_dia" && !fecha) return setErrores(["Elegí para qué día es el pedido."]);
+    if (conFactura) {
+      const e: string[] = [];
+      if (fac.nombre_apellido.trim().length < 3) e.push("Para la factura falta el nombre y apellido.");
+      if (!/^\d{1,8}-\d$/.test(fac.ruc.trim())) e.push("El RUC va con guion y dígito verificador, por ejemplo 1234567-8.");
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fac.correo.trim())) e.push("Revisá el correo para la factura.");
+      if (e.length) return setErrores(e);
+    }
     setEnviando(true);
     // Se abre la pestaña antes de esperar al servidor para que el navegador no la bloquee.
     const ventana = window.open("", "_blank");
+    if (ventana) ventana.opener = null;
     try {
       const r = await fetch("/api/pedidos", {
         method: "POST",
@@ -145,6 +154,7 @@ export default function Armador(p: Props) {
           fechaEntrega: modo === "otro_dia" ? fecha : undefined,
           nombre,
           factura: conFactura ? fac : null,
+          sitio_web: trampa || undefined,
         }),
       });
       const d = await r.json();
@@ -259,17 +269,22 @@ export default function Armador(p: Props) {
             <label htmlFor="fac-nombre">Nombre y apellido</label>
             <input id="fac-nombre" type="text" autoComplete="name" maxLength={120} value={fac.nombre_apellido} onChange={(e) => setFac({ ...fac, nombre_apellido: e.target.value })} />
             <label htmlFor="fac-ruc">RUC</label>
-            <input id="fac-ruc" type="text" inputMode="numeric" maxLength={30} value={fac.ruc} onChange={(e) => setFac({ ...fac, ruc: e.target.value })} />
+            <input id="fac-ruc" type="text" inputMode="numeric" maxLength={12} placeholder="1234567-8" value={fac.ruc} onChange={(e) => setFac({ ...fac, ruc: e.target.value })} />
             <label htmlFor="fac-correo">Correo</label>
             <input id="fac-correo" type="email" autoComplete="email" maxLength={120} aria-describedby="ayuda-correo" value={fac.correo} onChange={(e) => setFac({ ...fac, correo: e.target.value })} />
             <small className="ayuda" id="ayuda-correo">La factura te llega a este correo.</small>
           </div>
         ) : null}
+        <div className="trampa" aria-hidden="true">
+          <label htmlFor="sitio-web">No completar</label>
+          <input id="sitio-web" type="text" tabIndex={-1} autoComplete="off" value={trampa} onChange={(e) => setTrampa(e.target.value)} />
+        </div>
         {errores.length ? <div className="errores" role="alert">{errores.map((e) => <p key={e}>{e}</p>)}</div> : null}
         <button type="button" className="boton enviar" aria-disabled={vacio || enviando} onClick={mandar}>
           <span style={{ display: "contents" }} dangerouslySetInnerHTML={{ __html: arte.iconos.mensaje }} />
           {enviando ? "Preparando tu pedido..." : "Mandar mi pedido por WhatsApp"}
         </button>
+        <p className="legal-pedido">Al mandar el pedido aceptás las <a href="/terminos">condiciones</a>. Mirá cómo cuidamos tus datos en <a href="/privacidad">privacidad</a>.</p>
         {listo ? (
           <div className="listo" role="status">
             <p><b>{AVISO_ABIERTO}</b></p>

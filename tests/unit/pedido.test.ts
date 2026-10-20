@@ -41,3 +41,19 @@ describe("validarPedido", () => {
     expect(v({ lineas: [{ tipo: "gourmet", slug: "frutilla", cantidad: 5 }, { tipo: "gourmet", slug: "frutilla", cantidad: 5 }] }).ok).toBe(false);
   });
 });
+
+import { pedidoEntrada } from "@/lib/pedido";
+
+describe("factura y límites", () => {
+  const conFactura = (f: object) => pedidoEntrada.safeParse({ modalidad: "otro_dia", lineas: [], entrega: "retiro", nombre: "Ana", factura: f });
+  it("factura completa y con RUC válido", () => {
+    expect(conFactura({ nombre_apellido: "Ana Pérez", ruc: "1234567-8", correo: "ana@ejemplo.com" }).success).toBe(true);
+    expect(conFactura({ nombre_apellido: "Ana Pérez", ruc: "<script>", correo: "ana@ejemplo.com" }).success).toBe(false);
+    expect(conFactura({ nombre_apellido: "", ruc: "1234567-8", correo: "ana@ejemplo.com" }).success).toBe(false);
+    expect(conFactura({ nombre_apellido: "Ana Pérez", ruc: "1234567-8", correo: "" }).success).toBe(false);
+  });
+  it("fecha hasta 90 días", () => {
+    expect(v({ fechaEntrega: "2027-01-18", lineas: [{ tipo: "gourmet", slug: "frutilla", cantidad: 5 }] }).ok).toBe(true);
+    expect(v({ fechaEntrega: "9999-12-31", lineas: [{ tipo: "gourmet", slug: "frutilla", cantidad: 5 }] }).ok).toBe(false);
+  });
+});

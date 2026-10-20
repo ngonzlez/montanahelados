@@ -355,3 +355,7 @@ input[type=date]::-webkit-date-and-time-value{text-align:left}
 .texto-simple ul{margin:0;padding-left:22px;display:grid;gap:8px}
 .no-encontrada{text-align:center}
 .no-encontrada img{width:min(240px,70vw);margin:0 auto 20px;border-radius:50%;border:6px solid var(--choco)}
+
+.trampa{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+.legal-pedido{font-size:14px;font-weight:700;text-align:center}
+.legal-pedido a{font-weight:800;text-underline-offset:3px}

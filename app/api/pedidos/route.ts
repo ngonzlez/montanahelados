@@ -8,23 +8,25 @@ import { pedidoEntrada, validarPedido } from "@/lib/pedido";
 import { calcularPedido } from "@/lib/precios";
 import { enlaceWhatsapp, mensajePedido, AVISO_ABIERTO } from "@/lib/whatsapp";
 import { catalogoParaValidar, leerAjustes, leerEscalones } from "@/lib/datos";
-import { permitido } from "@/lib/limite";
+import { permitido, ipDeCabeceras } from "@/lib/limite";
 import { gs } from "@/lib/formato";
 
 export const dynamic = "force-dynamic";
 
-function ipDe(req: NextRequest) {
-  return (req.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || req.headers.get("x-real-ip") || "sin-ip";
-}
+const MAX_BYTES = 16 * 1024;
 
 export async function POST(req: NextRequest) {
-  const ip = ipDe(req);
+  const largo = Number(req.headers.get("content-length") ?? 0);
+  if (largo > MAX_BYTES) return NextResponse.json({ ok: false, errores: ["El pedido es demasiado grande."] }, { status: 413 });
+  const ip = ipDeCabeceras(req.headers);
   if (!permitido(ip)) {
     return NextResponse.json({ ok: false, errores: ["Hiciste muchos pedidos seguidos. Probá de nuevo en unos minutos o escribinos por WhatsApp."] }, { status: 429 });
   }
   let cuerpo: unknown;
   try {
-    cuerpo = await req.json();
+    const texto = await req.text();
+    if (texto.length > MAX_BYTES) return NextResponse.json({ ok: false, errores: ["El pedido es demasiado grande."] }, { status: 413 });
+    cuerpo = JSON.parse(texto);
   } catch {
     return NextResponse.json({ ok: false, errores: ["No pudimos leer el pedido."] }, { status: 400 });
   }
@@ -33,6 +35,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, errores: forma.error.issues.map((i) => i.message) }, { status: 400 });
   }
   const e = forma.data;
+  // honeypot: respondemos como si nada para no darle pistas al robot, pero no se guarda
+  if (e.sitio_web) return NextResponse.json({ ok: true, codigo: "MH-0000", enlace: "https://wa.me/", aviso: AVISO_ABIERTO });
   const [catalogo, escalones, ajustes] = await Promise.all([catalogoParaValidar(), leerEscalones(), leerAjustes()]);
   const reglas: Partial<NonNullable<typeof ajustes.pedidos>> = ajustes.pedidos ?? {};
   const v = validarPedido(e, catalogo, { paquete: reglas.paquete_unidades ?? 25 });
@@ -41,7 +45,9 @@ export async function POST(req: NextRequest) {
   const senaPct = reglas.sena_porcentaje ?? 50;
   const calculo = calcularPedido(v.lineas, escalones, senaPct);
   const factura = e.factura ? { nombre_apellido: e.factura.nombre_apellido, ruc: e.factura.ruc, correo: e.factura.correo } : null;
-  const ipHash = createHash("sha256").update(ip + (process.env.IP_HASH_SECRETO ?? "")).digest("hex").slice(0, 32);
+  // Sin secreto no se guarda nada: un hash sin sal de una IP se puede revertir.
+  const secreto = process.env.IP_HASH_SECRETO;
+  const ipHash = secreto ? createHash("sha256").update(secreto + ip).digest("hex").slice(0, 32) : null;
 
   const guardado = await db.transaction(async (tx) => {
     const [p] = await tx
@@ -58,7 +64,6 @@ export async function POST(req: NextRequest) {
         entrega: e.entrega,
         fechaEntrega: v.fechaEntrega,
         nombre: e.nombre,
-        telefono: e.telefono || null,
         factura,
         ipHash,
       })

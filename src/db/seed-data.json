@@ -232,7 +232,9 @@
     "Pedidos del día: paquetes de 25 de un solo sabor según disponibilidad.",
     "Si el pedido sale por Bolt Envíos, el viaje se abona al conductor y el importe de los heladitos debe estar cancelado por transferencia antes de que salga del local.",
     "Solicitá nuestra ubicación antes de realizar el pago.",
-    "Si cancelás el pedido, la seña no se devuelve."
+    "Si cancelás el pedido, la seña no se devuelve.",
+    "Si retirás en el local, traé tu conservadora.",
+    "Los heladitos son a base de leche y salen bien congelados: no deben descongelarse del todo para volver a congelarse, porque la mezcla se corta."
   ],
   "por_confirmar": [
     "email que recibe los avisos de pedidos"

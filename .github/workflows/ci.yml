@@ -32,6 +32,6 @@ jobs:
       - run: npm run build
       - run: npm run build:scripts
       - name: Migraciones y semilla contra Postgres
-        run: node dist/migrate.mjs && node dist/seed.mjs && node dist/seed.mjs
+        run: node dist/migrate.mjs && node dist/seed.mjs && node dist/seed.mjs && node dist/purgar-datos.mjs
       - name: Dependencias sin vulnerabilidades altas
         run: npm audit --omit=dev --audit-level=high
