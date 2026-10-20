@@ -13,21 +13,21 @@ playwright-report/
 .env.*
 !.env.example
 
-# material del estudio (no va a Git)
-docs/
-fotos/
-fotos-jpg/
-iconos/
-logo-propuesta/
-prototipo/
-videos/
-Claude outputs/
-*.gif
-*.jpeg
-logo.jpg
-logo.png
-catalogo.md
-detalle
-detalle2
+# material del estudio (no va a Git). Con "/" adelante: solo en la raíz,
+# así no se ignora public/fotos, que sí es parte de la web.
+/docs/
+/fotos/
+/fotos-jpg/
+/iconos/
+/logo-propuesta/
+/prototipo/
+/videos/
+/Claude outputs/
+/*.gif
+/*.jpeg
+/logo.jpg
+/logo.png
+/catalogo.md
+/detalle
+/detalle2
 .DS_Store
-dist/
