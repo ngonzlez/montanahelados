@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { display, texto } from "@/fuentes";
-import "./sitio.css";
 
 const URL_BASE = process.env.SITE_URL ?? "https://montanahelados.nogashopp.com";
 

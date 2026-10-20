@@ -26,7 +26,7 @@ npm run db:seed             # carga sabores, precios, promos, puntos de venta y 
 npm run dev                 # http://localhost:3000
 ```
 
-Para generar los secretos: `openssl rand -base64 32` (BETTER_AUTH_SECRET) y `openssl rand -hex 24` (CRON_SECRET, IP_HASH_SECRETO).
+Para generar los secretos: `openssl rand -base64 32` (BETTER_AUTH_SECRET) y `openssl rand -hex 24` (IP_HASH_SECRETO).
 
 ## Comandos
 
@@ -40,6 +40,7 @@ Para generar los secretos: `openssl rand -base64 32` (BETTER_AUTH_SECRET) y `ope
 | `npm run db:generate` | Nueva migración después de cambiar `src/db/schema.ts` |
 | `npm run db:migrate` | Aplica migraciones |
 | `npm run db:seed` | Semilla (solo carga tablas vacías, nunca pisa lo que cambió la dueña) |
+| `npm run job:emails` | Manda los avisos pendientes de la cola |
 | `npm run job:purgar` | Borra pedidos de más de 12 meses y hashes de IP de más de 30 días |
 
 ## Estructura
@@ -77,11 +78,20 @@ tests/unit/           vitest
 4. Volumen persistente montado en `/data/archivos`.
 5. Variables de entorno: las de `.env.example`, con `SITE_URL` y `BETTER_AUTH_URL` en el dominio de producción y `ARCHIVOS_DIR=/data/archivos`.
 6. Health check: `/api/health`.
-7. Scheduled Tasks:
-   - `node dist/purgar-datos.mjs`, todos los días a las 03:10.
+7. Scheduled Tasks (dentro de la app):
+   - `node dist/enviar-emails.mjs`, cada minuto (`* * * * *`): manda los avisos de pedidos nuevos.
+   - `node dist/purgar-datos.mjs`, todos los días a las 03:10 (`10 3 * * *`): pedidos a 12 meses, hash de IP a 30 días, papelera a 30 días, sesiones vencidas.
 8. Backups: Scheduled Backups diario del PostgreSQL y copia diaria del volumen fuera del servidor (Coolify no respalda volúmenes). Probar una restauración antes de lanzar.
 
-Al arrancar, el contenedor corre `migrate`, `seed` y después la app.
+Al arrancar, el contenedor corre `migrate`, `seed` y después la app. La semilla crea el usuario del panel con `ADMIN_EMAIL`, `ADMIN_NOMBRE` y `ADMIN_PASSWORD` (mínimo 10 caracteres) si todavía no existe; después la dueña cambia la contraseña desde Ajustes.
+
+## Panel de la dueña
+
+`/gestionar` (login con email y contraseña). Inicio con pedidos nuevos y de mañana, botón "Todo disponible"; pedidos con filtros, búsqueda y paginado en el servidor, estado y notas; sabores y Helados XL con estado (Disponible, Hoy no hay, Agotado, Oculto), cambio en lote y fotos; precios por cantidad; promos con foto, fechas, terminar y duplicar; puntos de venta; ajustes (email de avisos con prueba, WhatsApp, redes, horario, mapa, seña, datos de pago privados, contraseña); papelera de 30 días.
+
+- Sin registro público: el único usuario lo crea la semilla.
+- Recuperar contraseña por email (enlace de un uso, vence en 1 hora). Necesita Resend configurado.
+- Fotos: JPG, PNG o WebP hasta 8 MB; se verifica el tipo real, se pasan a WebP de 1200 px y se guardan en `ARCHIVOS_DIR/fotos` (servidas en `/media/fotos/...`).
 
 ## Seguridad
 
@@ -89,6 +99,8 @@ Al arrancar, el contenedor corre `migrate`, `seed` y después la app.
 - Cabeceras: HSTS, CSP con `frame-ancestors 'none'`, `X-Frame-Options`, `nosniff`, Referrer-Policy y Permissions-Policy (`next.config.ts`).
 - Pedidos: validación con Zod, recálculo en el servidor, honeypot anti-robots, límite de 8 pedidos cada 10 minutos por IP y 60 por minuto en total, cuerpo de máximo 16 KB.
 - La IP real se toma de `x-real-ip` (la pone Traefik) y se guarda solo como hash con secreto (`IP_HASH_SECRETO`); se borra a los 30 días.
+- Panel: sesión verificada en el servidor en cada página y cada acción; las acciones exigen que el pedido venga de la propia web (Origin); 5 intentos de login cada 15 minutos; contraseñas de 10 caracteres o más; cookies HttpOnly, Secure y SameSite=Lax; cambios registrados en `auditoria`.
+- Los datos de pago se guardan como ajuste privado y nunca se mandan a la web pública.
 - Contenedor con usuario sin privilegios.
 - CI: lint, tipos, tests, build, migraciones contra Postgres y `npm audit` (falla con vulnerabilidades altas).
 

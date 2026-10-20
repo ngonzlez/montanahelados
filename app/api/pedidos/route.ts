@@ -9,7 +9,6 @@ import { calcularPedido } from "@/lib/precios";
 import { enlaceWhatsapp, mensajePedido, AVISO_ABIERTO } from "@/lib/whatsapp";
 import { catalogoParaValidar, leerAjustes, leerEscalones } from "@/lib/datos";
 import { permitido, ipDeCabeceras } from "@/lib/limite";
-import { gs } from "@/lib/formato";
 
 export const dynamic = "force-dynamic";
 
@@ -76,7 +75,12 @@ export async function POST(req: NextRequest) {
       await tx.insert(s.notificacion).values({
         tipo: "pedido_nuevo_admin",
         para,
-        datos: { pedidoId: p.id, codigo, unidades: calculo.unidadesGourmet + calculo.unidadesXl, total: gs(calculo.total) },
+        datos: {
+          pedidoId: p.id, codigo, modalidad: e.modalidad, lineas: v.lineas,
+          unidades: calculo.unidadesGourmet + calculo.unidadesXl, total: calculo.total, sena: calculo.sena,
+          entrega: e.entrega, fechaEntrega: v.fechaEntrega, nombre: e.nombre, factura: !!factura,
+          enlacePanel: `${process.env.SITE_URL ?? ""}/gestionar#pedido-${p.id}`,
+        },
       });
     }
     return { id: p.id, codigo };

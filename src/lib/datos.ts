@@ -14,7 +14,8 @@ export type Ajustes = {
 
 export async function leerAjustes(): Promise<Ajustes> {
   const filas = await db.select().from(s.ajustes);
-  return Object.fromEntries(filas.map((f) => [f.clave, f.valor]));
+  // los datos de pago son privados: nunca salen hacia la web pública
+  return Object.fromEntries(filas.filter((f) => f.clave !== "datos_pago_privado").map((f) => [f.clave, f.valor]));
 }
 
 export async function leerEscalones(): Promise<Escalon[]> {

@@ -16,5 +16,16 @@ const ips = await db
   .returning({ id: s.pedido.id });
 const avisos = await db.delete(s.notificacion).where(lt(s.notificacion.creado, sql`now() - interval '12 months'`)).returning({ id: s.notificacion.id });
 
+// Papelera: lo eliminado hace más de 30 días se borra de verdad.
+const viejo = sql`now() - interval '30 days'`;
+let papelera = 0;
+for (const t of [s.sabor, s.heladoXl, s.promo, s.puntoVenta]) {
+  papelera += (await db.delete(t).where(lt(t.eliminadoEn, viejo)).returning({ id: t.id })).length;
+}
+// Sesiones vencidas y tokens de recuperación usados o vencidos
+await db.delete(s.session).where(lt(s.session.expiresAt, sql`now()`));
+await db.delete(s.verification).where(lt(s.verification.expiresAt, sql`now()`));
+
+console.log(`Papelera: ${papelera} borrados definitivamente`);
 console.log(`Purga: ${pedidos.length} pedidos, ${ips.length} hashes de IP, ${avisos.length} avisos`);
 await pool.end();

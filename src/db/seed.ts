@@ -4,6 +4,9 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import * as s from "./schema";
 import datos from "./seed-data.json";
+import { hashPassword } from "better-auth/crypto";
+import { randomUUID } from "node:crypto";
+import { eq } from "drizzle-orm";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const db = drizzle(pool, { schema: s });
@@ -47,6 +50,19 @@ const ajustesIniciales: Record<string, unknown> = {
   conservacion: datos.conservacion,
 };
 await db.insert(s.ajustes).values(Object.entries(ajustesIniciales).map(([clave, valor]) => ({ clave, valor }))).onConflictDoNothing();
+
+// Primer usuario del panel desde ADMIN_EMAIL / ADMIN_NOMBRE / ADMIN_PASSWORD (solo si no existe).
+const email = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+const clave = process.env.ADMIN_PASSWORD;
+if (email && clave) {
+  if (clave.length < 10) console.warn("ADMIN_PASSWORD tiene menos de 10 caracteres: no se creó el usuario del panel");
+  else if (!(await db.select({ id: s.user.id }).from(s.user).where(eq(s.user.email, email))).length) {
+    const id = randomUUID();
+    await db.insert(s.user).values({ id, name: process.env.ADMIN_NOMBRE?.trim() || "Dueña", email, emailVerified: true, rol: "duena" });
+    await db.insert(s.account).values({ id: randomUUID(), accountId: id, providerId: "credential", userId: id, password: await hashPassword(clave) });
+    console.log(`Usuario del panel creado: ${email}`);
+  }
+}
 
 await pool.end();
 console.log("Semilla cargada");
