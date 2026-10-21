@@ -21,6 +21,7 @@ export type DatosMensaje = {
   nombre: string;
   codigo?: string;
   factura?: Partial<DatosFactura> | null;
+  promo?: { titulo: string } | null;
 };
 
 const completar = (v?: string) => (v && v.trim() ? v.trim() : "(completar)");
@@ -30,7 +31,9 @@ export function mensajePedido(d: DatosMensaje): string {
   const g = d.lineas.filter((l) => l.tipo === "gourmet" && l.cantidad > 0);
   const x = d.lineas.filter((l) => l.tipo === "xl" && l.cantidad > 0);
   const c = d.calculo;
-  const r: string[] = [`¡Hola, Montana Helados! Quiero hacer un pedido ${hoy ? "para hoy" : "para otro día"}:`, ""];
+  const r: string[] = d.promo
+    ? [`¡Hola, Montana Helados! Quiero la promo "${d.promo.titulo}" ${hoy ? "para hoy" : "para otro día"}:`, ""]
+    : [`¡Hola, Montana Helados! Quiero hacer un pedido ${hoy ? "para hoy" : "para otro día"}:`, ""];
   if (g.length) {
     r.push(hoy ? "Heladitos (paquetes de 25):" : "Heladitos:");
     for (const l of g) r.push(`- ${l.sabor}: ${l.cantidad}`);

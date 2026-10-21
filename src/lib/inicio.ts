@@ -1,10 +1,10 @@
 // Todo lo que necesita la página de inicio, en una sola lectura.
 import "server-only";
 import { unstable_cache } from "next/cache";
-import { and, asc, eq, isNull, or, lte, gte } from "drizzle-orm";
+import { and, asc, eq, isNull } from "drizzle-orm";
 import { db, schema as s } from "@/db";
 import { hoyISO } from "./fechas";
-import { leerAjustes, leerCatalogo, leerEscalones } from "./datos";
+import { leerAjustes, leerCatalogo, leerEscalones, promoVigenteDonde } from "./datos";
 
 async function leerInicio() {
   const hoy = hoyISO();
@@ -15,15 +15,7 @@ async function leerInicio() {
     db
       .select()
       .from(s.promo)
-      .where(
-        and(
-          eq(s.promo.visible, true),
-          isNull(s.promo.eliminadoEn),
-          isNull(s.promo.terminadaEn),
-          or(isNull(s.promo.desde), lte(s.promo.desde, hoy)),
-          or(isNull(s.promo.hasta), gte(s.promo.hasta, hoy)),
-        ),
-      )
+      .where(promoVigenteDonde(hoy))
       .orderBy(asc(s.promo.orden)),
     db.select().from(s.puntoVenta).where(and(eq(s.puntoVenta.visible, true), isNull(s.puntoVenta.eliminadoEn))).orderBy(asc(s.puntoVenta.orden)),
   ]);

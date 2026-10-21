@@ -65,6 +65,7 @@ tests/unit/           vitest
 
 - Los precios salen de la tabla `escalon_precio`, nunca de números en el código. Heladitos: 1 → G. 3.000, 50 → G. 2.500, 100 → G. 2.000. XL: 1 → G. 7.000, 30 → G. 5.000. Los escalones suman todos los sabores.
 - Seña del 50 % (ajustes), redondeada a G. 1.000.
+- Promo armable: pide al menos el mínimo de heladitos (los XL no cuentan y van a precio normal). El precio de promo se usa solo si es mejor que el de la escala. El servidor vuelve a leer la promo y rechaza el pedido si ya terminó.
 - "Para hoy": paquetes de 25 de un solo sabor, solo sabores "Disponible". "Para otro día": desde mañana y hasta 90 días, cualquier cantidad, sabores "Disponible" u "Hoy no hay".
 - "Agotado" se ve pero no se puede pedir; "Oculto" no aparece.
 - El servidor valida y recalcula todo antes de guardar. Nunca se confía en precios del navegador.
@@ -87,7 +88,7 @@ Al arrancar, el contenedor corre `migrate`, `seed` y después la app. La semilla
 
 ## Panel de la dueña
 
-`/gestionar` (login con email y contraseña). Inicio con pedidos nuevos y de mañana, botón "Todo disponible"; pedidos con filtros, búsqueda y paginado en el servidor, estado y notas; sabores y Helados XL con estado (Disponible, Hoy no hay, Agotado, Oculto), cambio en lote y fotos; precios por cantidad; promos con foto, fechas, terminar y duplicar; puntos de venta; textos y fotos de la web (títulos y textos de cada sección, cómo aparece en Google, y las fotos fijas: reventa, las dos de XL, Hanna y la imagen para compartir; vacío = original); ajustes (email de avisos con prueba, WhatsApp, redes, horario, mapa, seña, datos de pago privados, contraseña); papelera de 30 días.
+`/gestionar` (login con email y contraseña). Inicio con pedidos nuevos y de mañana, botón "Todo disponible"; pedidos con filtros, búsqueda y paginado en el servidor, estado y notas; sabores y Helados XL con estado (Disponible, Hoy no hay, Agotado, Oculto), cambio en lote y fotos; precios por cantidad; promos con foto, fechas, terminar y duplicar, y opcionalmente armables en la web (mínimo de heladitos, precio por heladito y sabores que entran: el cliente toca "Pedir esta promo", elige sabores, suma XL y manda el pedido completo); puntos de venta; textos y fotos de la web (títulos y textos de cada sección, cómo aparece en Google, y las fotos fijas: reventa, las dos de XL, Hanna y la imagen para compartir; vacío = original); ajustes (email de avisos con prueba, WhatsApp, redes, horario, mapa, seña, datos de pago privados, contraseña); papelera de 30 días.
 
 - Sin registro público: el único usuario lo crea la semilla.
 - Recuperar contraseña por email (enlace de un uso, vence en 1 hora). Necesita Resend configurado.

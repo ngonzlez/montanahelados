@@ -34,7 +34,7 @@ export async function leerEstado() {
     sabores: sabores.map((x) => ({ ...x, eliminadoEn: undefined })),
     xl: xl.map((x) => ({ ...x, eliminadoEn: undefined })),
     precios,
-    promos: promos.map((p) => ({ id: p.id, titulo: p.titulo, detalle: p.detalle, foto: p.foto, desde: p.desde ?? "", hasta: p.hasta ?? "", terminada: !!p.terminadaEn, visible: p.visible })),
+    promos: promos.map((p) => ({ id: p.id, titulo: p.titulo, detalle: p.detalle, foto: p.foto, desde: p.desde ?? "", hasta: p.hasta ?? "", terminada: !!p.terminadaEn, visible: p.visible, minimo: p.minimo, precioUnidad: p.precioUnidad, sabores: p.sabores ?? [] })),
     puntos: puntos.map((p) => ({ id: p.id, nombre: p.nombre, barrio: p.barrio ?? "", mapa: p.linkMapa, visible: p.visible })),
     ajustes: {
       email: a.email_avisos ?? "",
@@ -119,7 +119,7 @@ export async function listarPedidos(f: FiltrosPedidos) {
     filas: filas.map((p) => ({
       id: p.id, codigo: p.codigo, modalidad: p.modalidad, entrega: p.entrega, fechaEntrega: p.fechaEntrega,
       nombre: p.nombre, detalle: p.detalle, total: p.total, sena: p.sena, estado: p.estado, notas: p.notas,
-      factura: p.factura, creado: p.creado, unidadesGourmet: p.unidadesGourmet, precioGourmet: p.precioGourmet, unidadesXl: p.unidadesXl, precioXl: p.precioXl,
+      factura: p.factura, promo: p.promo, creado: p.creado, unidadesGourmet: p.unidadesGourmet, precioGourmet: p.precioGourmet, unidadesXl: p.unidadesXl, precioXl: p.precioXl,
     })),
   };
 }
@@ -145,7 +145,13 @@ export const accion = z.discriminatedUnion("accion", [
   z.object({ accion: z.literal("precio"), id, campo: z.enum(["desde", "precio"]), valor: z.number().int().min(0).max(10_000_000) }),
   z.object({ accion: z.literal("nuevo_precio"), producto: z.enum(["gourmet", "xl"]), desde: z.number().int().min(2).max(100_000), precio: z.number().int().min(0).max(10_000_000) }),
   z.object({ accion: z.literal("borrar_precio"), id }),
-  z.object({ accion: z.literal("guardar_promo"), id: id.optional(), titulo: texto(100).min(1, "Poné un título."), detalle: texto(400), foto, desde: fechaOpcional, hasta: fechaOpcional }),
+  z.object({
+    accion: z.literal("guardar_promo"), id: id.optional(), titulo: texto(100).min(1, "Poné un título."), detalle: texto(400), foto, desde: fechaOpcional, hasta: fechaOpcional,
+    // armar en la web: mínimo de heladitos, precio por heladito (opcional) y sabores (vacío = todos)
+    minimo: z.number().int("El mínimo va sin decimales.").min(1, "El mínimo tiene que ser 1 o más.").max(5000).nullable().optional(),
+    precioUnidad: z.number().int("El precio va sin decimales.").min(1, "El precio tiene que ser mayor a 0.").max(10_000_000).nullable().optional(),
+    sabores: z.array(z.string().min(1).max(60)).max(100).optional(),
+  }),
   z.object({ accion: z.literal("terminar_promo"), id }),
   z.object({ accion: z.literal("duplicar_promo"), id }),
   z.object({ accion: z.literal("guardar_punto"), id: id.optional(), nombre: texto(80).min(1, "Poné el nombre del local."), barrio: texto(80), mapa }),
@@ -261,7 +267,11 @@ export async function ejecutar(a: Accion, u: Usuario): Promise<Resultado> {
     }
     case "guardar_promo": {
       if (a.desde && a.hasta && a.hasta < a.desde) return { ok: false, error: 'La fecha "hasta" no puede ser antes de "desde".' };
-      const valores = { titulo: a.titulo, detalle: a.detalle, textoWhatsapp: a.titulo, desde: a.desde || null, hasta: a.hasta || null };
+      if (a.precioUnidad && !a.minimo) return { ok: false, error: "Para poner precio de promo, poné también el mínimo de heladitos." };
+      const valores = {
+        titulo: a.titulo, detalle: a.detalle, textoWhatsapp: a.titulo, desde: a.desde || null, hasta: a.hasta || null,
+        minimo: a.minimo ?? null, precioUnidad: a.minimo ? (a.precioUnidad ?? null) : null, sabores: a.minimo && a.sabores?.length ? a.sabores : null,
+      };
       if (a.id) {
         await db.update(s.promo).set({ ...valores, ...(a.foto ? { foto: a.foto } : {}) }).where(eq(s.promo.id, a.id));
         await auditar(u, "promo", a.id, "editar", null, a.titulo);
@@ -279,7 +289,7 @@ export async function ejecutar(a: Accion, u: Usuario): Promise<Resultado> {
     case "duplicar_promo": {
       const [p] = await db.select().from(s.promo).where(eq(s.promo.id, a.id));
       if (!p) return { ok: false, error: "Esa promo ya no existe." };
-      await db.insert(s.promo).values({ titulo: `${p.titulo} (copia)`, detalle: p.detalle, foto: p.foto, textoWhatsapp: p.textoWhatsapp, desde: hoyISO(), hasta: null, visible: p.visible, orden: p.orden });
+      await db.insert(s.promo).values({ titulo: `${p.titulo} (copia)`, detalle: p.detalle, foto: p.foto, textoWhatsapp: p.textoWhatsapp, desde: hoyISO(), hasta: null, visible: p.visible, orden: p.orden, minimo: p.minimo, precioUnidad: p.precioUnidad, sabores: p.sabores });
       return { ok: true, aviso: "Promo duplicada" };
     }
     case "guardar_punto": {

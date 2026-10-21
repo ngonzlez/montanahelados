@@ -159,8 +159,15 @@ export default async function Inicio() {
                         <h3>{pr.titulo}</h3>
                         {pr.detalle ? <p>{pr.detalle}</p> : null}
                         <div className="promo-acciones">
-                          <a className="boton" target="_blank" rel="noopener" href={enlaceWhatsapp(wa.valor, mensajePromo(pr.textoWhatsapp || pr.titulo))}><Icono n="mensaje" />Pedir esta promo</a>
-                          <a className="boton claro" href="#arma" data-cargar-promo="Elegí los sabores en Armá tu pedido">Elegir sabores</a>
+                          {pr.minimo ? (
+                            // Promo que se arma en la web: lleva al armador con la promo puesta
+                            <a className="boton" href="#arma" data-armar-promo={pr.id}><Icono n="mensaje" />Pedir esta promo</a>
+                          ) : (
+                            <>
+                              <a className="boton" target="_blank" rel="noopener" href={enlaceWhatsapp(wa.valor, mensajePromo(pr.textoWhatsapp || pr.titulo))}><Icono n="mensaje" />Pedir esta promo</a>
+                              <a className="boton claro" href="#arma" data-cargar-promo="Elegí los sabores en Armá tu pedido">Elegir sabores</a>
+                            </>
+                          )}
                         </div>
                       </div>
                     </article>
@@ -221,6 +228,7 @@ export default async function Inicio() {
               pasoAnticipado={reglas.paso_anticipado ?? 5}
               atajosGourmet={reglas.atajos_gourmet ?? [25, 50]}
               atajosXl={reglas.atajos_xl ?? [5, 30]}
+              promos={d.promos.filter((pr) => pr.minimo).map((pr) => ({ id: pr.id, titulo: pr.titulo, minimo: pr.minimo!, precioUnidad: pr.precioUnidad, sabores: pr.sabores?.length ? pr.sabores : null }))}
             />
           </div>
         </section>

@@ -10,6 +10,7 @@ import arte from "@/content/arte.json";
 
 type Estado = "disponible" | "hoy_no_hay" | "agotado" | "oculto";
 export type ItemArmador = { slug: string; nombre: string; detalle?: string; foto: string | null; estado: Estado };
+export type PromoArmador = { id: number; titulo: string; minimo: number; precioUnidad: number | null; sabores: string[] | null };
 
 type Props = {
   sabores: ItemArmador[];
@@ -20,6 +21,7 @@ type Props = {
   pasoAnticipado: number;
   atajosGourmet: number[];
   atajosXl: number[];
+  promos: PromoArmador[];
 };
 
 type Modo = "otro_dia" | "hoy";
@@ -39,12 +41,18 @@ export default function Armador(p: Props) {
   const [copiado, setCopiado] = useState(false);
   const [trampa, setTrampa] = useState("");
   const [minFecha, setMinFecha] = useState("");
+  const [promoId, setPromoId] = useState<number | null>(null);
+  const promo = p.promos.find((x) => x.id === promoId) ?? null;
   const modoRef = useRef(modo);
   modoRef.current = modo;
+  const promoRef = useRef<PromoArmador | null>(null);
+  promoRef.current = promo;
 
   useEffect(() => setMinFecha(mananaISO()), []);
   // si cambia el pedido después de abrir WhatsApp, el aviso de "listo" ya no corresponde
-  useEffect(() => setListo(null), [cant, entrega, fecha, conFactura]);
+  useEffect(() => setListo(null), [cant, entrega, fecha, conFactura, promoId]);
+  // los errores viejos se borran apenas el cliente corrige el pedido
+  useEffect(() => setErrores([]), [cant, promoId]);
 
   const clave = (t: "g" | "x", slug: string) => `${t}:${slug}`;
   const sePuede = (it: ItemArmador, m: Modo) => it.estado === "disponible" || (m === "otro_dia" && it.estado === "hoy_no_hay");
@@ -59,6 +67,8 @@ export default function Armador(p: Props) {
       const it = p.sabores.find((s) => s.slug === slug);
       if (!it) return;
       if (!sePuede(it, modoRef.current)) return avisar(`Hoy no hay ${it.nombre}. Probá con "Para otro día".`);
+      const pr = promoRef.current;
+      if (pr?.sabores && !pr.sabores.includes(slug)) return avisar(`${it.nombre} no entra en la promo. Quitá la promo para pedirlo.`);
       sumar("g", slug, p.paquete);
       avisar(`Sumaste ${p.paquete} de ${it.nombre} a tu pedido`);
     };
@@ -66,6 +76,33 @@ export default function Armador(p: Props) {
     return () => window.removeEventListener("mh:sumar", f);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [p.sabores, p.paquete]);
+
+  // "Pedir esta promo" desde la tarjeta: el armador queda con la promo puesta
+  useEffect(() => {
+    const f = (e: Event) => {
+      const pr = p.promos.find((x) => x.id === (e as CustomEvent<number>).detail);
+      if (!pr) return;
+      setPromoId(pr.id);
+      setErrores([]);
+      if (pr.sabores) {
+        // si ya había sabores que no entran en la promo, se sacan
+        setCant((c) => {
+          const n = { ...c };
+          for (const s of p.sabores) if (!pr.sabores!.includes(s.slug)) delete n[clave("g", s.slug)];
+          return n;
+        });
+      }
+      avisar(`Elegí los sabores de la promo: desde ${pr.minimo} heladitos`);
+    };
+    window.addEventListener("mh:promo", f);
+    return () => window.removeEventListener("mh:promo", f);
+  }, [p.promos, p.sabores]);
+
+  function quitarPromo() {
+    setPromoId(null);
+    setErrores([]);
+    avisar("Quitaste la promo. Tu pedido sigue con los precios por cantidad.");
+  }
 
   function cambiarModo(m: Modo) {
     setModo(m);
@@ -94,7 +131,9 @@ export default function Armador(p: Props) {
     ].filter((l) => l.cantidad > 0),
     [cant, p.sabores, p.xl],
   );
-  const c = calcularPedido(lineas, p.escalones, p.senaPorcentaje);
+  const c = calcularPedido(lineas, p.escalones, p.senaPorcentaje, { precioPromoGourmet: promo?.precioUnidad });
+  const saboresVisibles = promo?.sabores ? p.sabores.filter((s) => promo.sabores!.includes(s.slug)) : p.sabores;
+  const faltanPromo = promo ? Math.max(0, promo.minimo - c.unidadesGourmet) : 0;
   const vacio = lineas.length === 0;
 
   const escG = p.escalones.filter((e) => e.producto === "gourmet").sort((a, b) => a.desde - b.desde);
@@ -104,7 +143,11 @@ export default function Armador(p: Props) {
   const siguienteX = escX.find((e) => e.desde > c.unidadesXl);
 
   let nota = "";
-  if (c.unidadesGourmet) {
+  if (promo) {
+    nota = faltanPromo
+      ? `Llevás ${c.unidadesGourmet} de ${promo.minimo}. Te faltan ${faltanPromo} heladitos para la promo.`
+      : `¡Listo! ${c.unidadesGourmet} heladitos a ${gs(c.precioGourmet)} cada uno. Podés sumar más sabores o Helados XL.`;
+  } else if (c.unidadesGourmet) {
     nota = `${c.unidadesGourmet} heladitos a ${gs(c.precioGourmet)} cada uno.`;
     if (modo === "hoy") { const n = c.unidadesGourmet / p.paquete; nota += ` Son ${n} paquete${n > 1 ? "s" : ""} de ${p.paquete}.`; }
     nota += siguienteG ? ` Sumá ${siguienteG.desde - c.unidadesGourmet} más y cada uno te sale ${gs(siguienteG.precio)}.` : " Tenés el mejor precio.";
@@ -121,12 +164,13 @@ export default function Armador(p: Props) {
 
   const mensaje = mensajePedido({
     modalidad: modo, lineas, calculo: c, senaPorcentaje: p.senaPorcentaje, entrega,
-    fechaEntrega: fecha || "", nombre, factura: conFactura ? fac : null,
+    fechaEntrega: fecha || "", nombre, factura: conFactura ? fac : null, promo,
   });
 
   async function mandar() {
     if (vacio || enviando) return;
     setErrores([]);
+    if (promo && faltanPromo) return setErrores([`La promo es desde ${promo.minimo} heladitos. Te faltan ${faltanPromo}.`]);
     if (!nombre.trim()) return setErrores(["Escribí tu nombre o el de tu negocio."]);
     if (modo === "otro_dia" && !fecha) return setErrores(["Elegí para qué día es el pedido."]);
     if (conFactura) {
@@ -154,6 +198,7 @@ export default function Armador(p: Props) {
           fechaEntrega: modo === "otro_dia" ? fecha : undefined,
           nombre,
           factura: conFactura ? fac : null,
+          promoId: promo?.id,
           sitio_web: trampa || undefined,
         }),
       });
@@ -211,6 +256,18 @@ export default function Armador(p: Props) {
   return (
     <div className="arma-grid">
       <div className="arma-listas">
+        {promo ? (
+          <div className="promo-activa" role="status">
+            <span className="cinta-promo">Promo</span>
+            <b>{promo.titulo}</b>
+            <p>
+              Desde {promo.minimo} heladitos{promo.precioUnidad ? ` a ${gs(promo.precioUnidad)} cada uno` : ""}
+              {promo.sabores ? ", de los sabores de la lista" : ", mezclá los sabores que quieras"}. Si querés más, sumá nomás. También podés agregar Helados XL.
+            </p>
+            <div className="promo-progreso" aria-hidden="true"><span style={{ transform: `scaleX(${Math.min(1, c.unidadesGourmet / promo.minimo)})` }} /></div>
+            <button type="button" className="quitar-promo" onClick={quitarPromo}>Quitar promo</button>
+          </div>
+        ) : null}
         <div className="modo" role="radiogroup" aria-label="¿Para cuándo es el pedido?">
           <button type="button" role="radio" aria-checked={modo === "otro_dia"} onClick={() => cambiarModo("otro_dia")}>
             Para otro día<small>pedís con 1 día o más · elegís todos los sabores</small>
@@ -226,7 +283,7 @@ export default function Armador(p: Props) {
         </p>
         <fieldset className="lista-pedido">
           <legend>Heladitos <small>{modo === "hoy" ? `paquetes de ${p.paquete}, un sabor por paquete` : `de a ${p.pasoAnticipado}, mezclá como quieras`}</small></legend>
-          <div>{p.sabores.map((s) => fila("g", s, p.atajosGourmet))}</div>
+          <div>{saboresVisibles.map((s) => fila("g", s, p.atajosGourmet))}</div>
         </fieldset>
         {p.xl.length ? (
           <fieldset className="lista-pedido">
@@ -236,13 +293,13 @@ export default function Armador(p: Props) {
         ) : null}
       </div>
       <aside className="resumen" aria-live="polite">
-        <h3>Tu pedido</h3>
+        <h3>{promo ? "Tu pedido con promo" : "Tu pedido"}</h3>
         <div className="resumen-items">
           {vacio ? <p className="vacio">Todavía no elegiste sabores.</p> : lineas.map((l) => (
             <span key={l.tipo + l.sabor}>{l.cantidad} {l.tipo === "xl" ? "XL" : "heladitos"} de {l.sabor}</span>
           ))}
         </div>
-        <div className="escala" aria-hidden="true">
+        <div className="escala" aria-hidden="true" hidden={!!promo}>
           <div className="escala-barra"><span style={{ transform: `scaleX(${Math.min(1, c.unidadesGourmet / tope)})` }} /></div>
           <div className="escala-marcas">
             {escG.map((e, i) => <span key={e.desde}>{i ? `${e.desde} u. · ` : ""}{gs(e.precio)}</span>)}

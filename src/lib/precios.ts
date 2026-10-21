@@ -36,11 +36,15 @@ export function calcularSena(total: number, porcentaje: number): number {
   return redondearMil((total * porcentaje) / 100);
 }
 
-export function calcularPedido(lineas: Linea[], escalones: Escalon[], senaPorcentaje: number): ResultadoPedido {
+/** Precio de promo por heladito: se usa si es mejor que el de la escala; nunca cobra más que sin promo. */
+export type OpcionesCalculo = { precioPromoGourmet?: number | null };
+
+export function calcularPedido(lineas: Linea[], escalones: Escalon[], senaPorcentaje: number, op: OpcionesCalculo = {}): ResultadoPedido {
   const suma = (t: Producto) => lineas.filter((l) => l.tipo === t).reduce((a, l) => a + l.cantidad, 0);
   const unidadesGourmet = suma("gourmet");
   const unidadesXl = suma("xl");
-  const precioGourmet = precioUnitario(escalones, "gourmet", unidadesGourmet);
+  const escala = precioUnitario(escalones, "gourmet", unidadesGourmet);
+  const precioGourmet = op.precioPromoGourmet ? Math.min(escala, op.precioPromoGourmet) : escala;
   const precioXl = precioUnitario(escalones, "xl", unidadesXl);
   const subtotalGourmet = unidadesGourmet * precioGourmet;
   const subtotalXl = unidadesXl * precioXl;

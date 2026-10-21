@@ -40,7 +40,7 @@ export function plantillaRecuperar(url: string) {
 
 export type DatosPedidoNuevo = {
   codigo: string; modalidad: "hoy" | "otro_dia"; lineas: { tipo: string; sabor: string; cantidad: number }[];
-  unidades: number; total: number; sena: number; entrega: "retiro" | "bolt"; fechaEntrega: string; nombre: string; factura: boolean; enlacePanel: string;
+  unidades: number; total: number; sena: number; entrega: "retiro" | "bolt"; fechaEntrega: string; nombre: string; factura: boolean; enlacePanel: string; promo?: string | null;
 };
 
 export function plantillaPedidoNuevo(d: DatosPedidoNuevo) {
@@ -48,6 +48,7 @@ export function plantillaPedidoNuevo(d: DatosPedidoNuevo) {
   const filas: [string, string][] = [
     ["Para", d.modalidad === "hoy" ? "hoy" : fechaVisible(d.fechaEntrega)],
     ["Cliente", d.nombre],
+    ...(d.promo ? ([["Promo", d.promo]] as [string, string][]) : []),
     ["Pedido", detalle.join(", ")],
     ["Total", gs(d.total)],
     ["Seña", gs(d.sena)],

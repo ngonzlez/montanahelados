@@ -67,12 +67,18 @@ export const promo = pgTable("promo", {
   hasta: date("hasta"),
   visible: boolean("visible").notNull().default(true),
   orden: integer("orden").notNull().default(0),
+  // Promo que se arma en la web: con mínimo, el cliente elige sabores en el armador.
+  // Sin mínimo, la promo solo abre WhatsApp con el texto (como antes).
+  minimo: integer("minimo"),
+  precioUnidad: integer("precio_unidad"), // G. por heladito dentro de la promo; null = precio por cantidad normal
+  sabores: jsonb("sabores").$type<string[] | null>(), // slugs de heladitos que entran; null = todos
   terminadaEn: timestamp("terminada_en", { withTimezone: true }),
   eliminadoEn: eliminado(),
 });
 
 export type LineaPedido = { tipo: "gourmet" | "xl"; sabor: string; cantidad: number };
 export type DatosFactura = { nombre_apellido: string; ruc: string; correo: string };
+export type PromoPedido = { id: number; titulo: string; minimo: number; precioUnidad: number | null };
 
 export const pedido = pgTable(
   "pedido",
@@ -92,6 +98,7 @@ export const pedido = pgTable(
     nombre: text("nombre").notNull(),
     telefono: text("telefono"),
     factura: jsonb("factura").$type<DatosFactura | null>(),
+    promo: jsonb("promo").$type<PromoPedido | null>(), // promo congelada al momento del pedido
     estado: estadoPedido("estado").notNull().default("nuevo"),
     notas: text("notas").notNull().default(""),
     ipHash: text("ip_hash"),

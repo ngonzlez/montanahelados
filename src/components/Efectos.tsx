@@ -56,6 +56,7 @@ export default function Efectos({ celular }: { celular: string }) {
 
     // "Sumar 25" en tarjetas y "Elegir sabores" en promos
     document.querySelectorAll<HTMLElement>(".sumar").forEach((b) => on(b, "click", () => window.dispatchEvent(new CustomEvent("mh:sumar", { detail: b.dataset.slug }))));
+    document.querySelectorAll<HTMLElement>("[data-armar-promo]").forEach((b) => on(b, "click", () => window.dispatchEvent(new CustomEvent("mh:promo", { detail: Number(b.dataset.armarPromo) }))));
     document.querySelectorAll<HTMLElement>("[data-cargar-promo]").forEach((b) => on(b, "click", () => window.dispatchEvent(new CustomEvent("mh:aviso", { detail: b.dataset.cargarPromo }))));
 
     // revelar al entrar

@@ -1,6 +1,7 @@
 // Lecturas de la base usadas por la web pública y la API.
 import "server-only";
-import { asc, isNull, and, ne } from "drizzle-orm";
+import { asc, isNull, and, ne, eq, or, lte, gte } from "drizzle-orm";
+import { hoyISO } from "./fechas";
 import { db, schema as s } from "@/db";
 import type { Escalon } from "./precios";
 import type { ItemCatalogo } from "./pedido";
@@ -37,4 +38,22 @@ export async function catalogoParaValidar(): Promise<ItemCatalogo[]> {
     db.select({ slug: s.heladoXl.slug, nombre: s.heladoXl.nombre, estado: s.heladoXl.estado }).from(s.heladoXl).where(isNull(s.heladoXl.eliminadoEn)),
   ]);
   return [...sabores.map((x) => ({ ...x, tipo: "gourmet" as const })), ...xl.map((x) => ({ ...x, tipo: "xl" as const }))];
+}
+
+/** Condición de "promo vigente": visible, no borrada, no terminada y dentro de sus fechas. */
+export function promoVigenteDonde(hoy: string) {
+  return and(
+    eq(s.promo.visible, true),
+    isNull(s.promo.eliminadoEn),
+    isNull(s.promo.terminadaEn),
+    or(isNull(s.promo.desde), lte(s.promo.desde, hoy)),
+    or(isNull(s.promo.hasta), gte(s.promo.hasta, hoy)),
+  );
+}
+
+/** Promo que se arma en la web (con mínimo) y está vigente hoy; null si no existe o ya terminó. */
+export async function promoParaPedido(id: number) {
+  const [p] = await db.select().from(s.promo).where(and(eq(s.promo.id, id), promoVigenteDonde(hoyISO())));
+  if (!p || !p.minimo) return null;
+  return { id: p.id, titulo: p.titulo, minimo: p.minimo, precioUnidad: p.precioUnidad, sabores: p.sabores?.length ? p.sabores : null };
 }

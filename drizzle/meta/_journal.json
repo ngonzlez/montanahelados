@@ -8,6 +8,13 @@
       "when": 1792518723665,
       "tag": "0000_inicial",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792608890259,
+      "tag": "0001_promo_armable",
+      "breakpoints": true
     }
   ]
 }

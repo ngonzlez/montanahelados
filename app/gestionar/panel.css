@@ -110,6 +110,11 @@ select.inline{width:auto}
 .campo label{font-weight:800}
 .campo input,.campo textarea,.campo select{min-height:46px;border:3px solid var(--choco);border-radius:14px;background:var(--vainilla);padding:8px 12px}
 .campo small{color:var(--suave);font-weight:700}
+.promo-armar{border:3px dashed var(--choco);border-radius:16px;padding:12px 14px;gap:10px;margin:0}
+.promo-armar legend{padding:0 6px}
+.sabores-promo{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px 12px}
+.sabores-promo label{display:flex;align-items:center;gap:8px;font-weight:700}
+.campo .sabores-promo input{min-height:0;width:22px;height:22px;padding:0;accent-color:var(--choco)}
 .bloque{background:var(--leche);border:3px solid var(--choco);border-radius:20px;padding:16px 18px;display:grid;gap:12px;margin-bottom:16px;max-width:720px}
 .bloque h3{font-size:24px}
 .confirmar{position:fixed;z-index:50;inset:0;display:grid;place-items:center;background:rgba(107,34,25,.45);padding:16px}

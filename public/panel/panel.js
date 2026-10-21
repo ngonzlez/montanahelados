@@ -123,7 +123,7 @@
       </div>
       <div class="barra"><input type="search" placeholder="Buscar por cliente, código o sabor" aria-label="Buscar pedidos" value="${esc(busqueda)}" data-buscar>${activos ? `<button type="button" class="btn chico" data-limpiar>Limpiar filtros (${activos})</button>` : ''}</div>
       <div class="tabla tarjetas-movil"><table class="t-pedidos"><thead><tr><th>Código</th><th>Para el día</th><th>Cliente</th><th>Pedido</th><th>Total</th><th>Entrega</th><th>Estado</th><th></th></tr></thead><tbody>
-      ${filas.map((p) => `<tr id="pedido-${p.id}" class="${p.fechaEntrega < hoyISO() ? 'pasado' : ''}"><td data-l="Código" class="nw"><b>${esc(p.codigo)}</b></td><td data-l="Para el día"><b>${cap(diaTxt(p.fechaEntrega))}</b></td><td data-l="Cliente" class="full"><b>${esc(p.nombre)}</b></td><td data-l="Pedido" class="full">${esc(lineasTexto(p.detalle))}<br><small>${p.modalidad === 'hoy' ? 'Para hoy' : 'Para otro día'}</small></td><td class="num" data-l="Total">${gs(p.total)}</td><td data-l="Entrega">${p.entrega === 'bolt' ? 'Bolt' : 'Retiro'}${p.factura ? '<br><small><b>Con factura</b></small>' : ''}</td>
+      ${filas.map((p) => `<tr id="pedido-${p.id}" class="${p.fechaEntrega < hoyISO() ? 'pasado' : ''}"><td data-l="Código" class="nw"><b>${esc(p.codigo)}</b></td><td data-l="Para el día"><b>${cap(diaTxt(p.fechaEntrega))}</b></td><td data-l="Cliente" class="full"><b>${esc(p.nombre)}</b></td><td data-l="Pedido" class="full">${esc(lineasTexto(p.detalle))}<br><small>${p.modalidad === 'hoy' ? 'Para hoy' : 'Para otro día'}${p.promo ? ` · <b>Promo: ${esc(p.promo.titulo)}</b>` : ''}</small></td><td class="num" data-l="Total">${gs(p.total)}</td><td data-l="Entrega">${p.entrega === 'bolt' ? 'Bolt' : 'Retiro'}${p.factura ? '<br><small><b>Con factura</b></small>' : ''}</td>
       <td data-l="Estado" class="full"><select class="inline" data-estado-pedido="${p.id}" aria-label="Estado de ${esc(p.codigo)}">${ESTADOS_PEDIDO.map(([e, t]) => `<option value="${e}" ${e === p.estado ? 'selected' : ''}>${t}</option>`).join('')}</select></td>
       <td class="full"><div class="acciones"><button class="btn chico pri" data-ver-pedido="${p.id}">Ver</button></div></td></tr>`).join('')}
       </tbody></table>${filas.length ? '' : `<div class="vacio">${todos ? 'No hay pedidos con estos filtros. <button type="button" class="btn chico" data-limpiar>Ver todos</button>' : 'Todavía no entró ningún pedido por la web.'}</div>`}</div>${total > 10 ? pag : ''}`;
@@ -141,7 +141,7 @@
     promos() {
       return `<div class="cabeza"><h2>Promos</h2><span class="contador">${db.promos.length} ${db.promos.length === 1 ? 'promo' : 'promos'}</span><button class="btn pri" data-nuevo="promos">Nueva promo</button></div>
       <div class="tabla tarjetas-movil"><table><thead><tr><th>#</th><th>Foto</th><th>Título</th><th>Desde</th><th>Hasta</th><th>Estado</th><th></th></tr></thead><tbody>
-      ${db.promos.map((p) => { const e = estadoPromo(p); return `<tr><td class="id">#${p.id}</td><td class="sel">${p.foto ? `<img class="mini foto" src="${esc(p.foto)}" alt="">` : ''}</td><td class="full"><b>${esc(p.titulo)}</b></td><td data-l="Desde">${p.desde ? fecha(p.desde) : 'ya'}</td><td data-l="Hasta">${p.hasta ? fecha(p.hasta) : 'sin fecha'}</td><td data-l="Estado"><span class="chip ${e}">${e}</span></td>
+      ${db.promos.map((p) => { const e = estadoPromo(p); return `<tr><td class="id">#${p.id}</td><td class="sel">${p.foto ? `<img class="mini foto" src="${esc(p.foto)}" alt="">` : ''}</td><td class="full"><b>${esc(p.titulo)}</b>${p.minimo ? `<br><small>Se arma en la web · desde ${p.minimo} heladitos${p.precioUnidad ? ` a ${gs(p.precioUnidad)}` : ''}${p.sabores.length ? ` · ${p.sabores.length} sabores` : ''}</small>` : ''}</td><td data-l="Desde">${p.desde ? fecha(p.desde) : 'ya'}</td><td data-l="Hasta">${p.hasta ? fecha(p.hasta) : 'sin fecha'}</td><td data-l="Estado"><span class="chip ${e}">${e}</span></td>
       <td class="full"><div class="acciones">${e !== 'finalizada' ? `<button class="btn chico" data-terminar="${p.id}">Terminar promo</button>` : ''}<button class="btn chico" data-duplicar="${p.id}">Duplicar</button><button class="btn chico" data-editar="promos" data-id="${p.id}">Editar</button><button class="btn chico peligro" data-borrar="promos" data-id="${p.id}">Eliminar</button></div></td></tr>`; }).join('')}
       </tbody></table>${db.promos.length ? '' : '<div class="vacio">No hay promos. Tocá "Nueva promo".</div>'}</div>
       <p><small>La fecha "hasta" es opcional. Sin fecha, la promo queda hasta que toques "Terminar promo". Terminada, deja de verse en la web pero no se borra.</small></p>`;
@@ -249,11 +249,20 @@
     if (lista === 'promos') {
       return lado(nuevo ? 'Nueva promo' : 'Editar promo',
         campo('titulo', 'Título', item?.titulo, 'text', 'Es lo que se lee grande y lo que llega en el mensaje de WhatsApp.', 'maxlength="100" required') + campo('detalle', 'Detalle', item?.detalle, 'textarea', '', 'maxlength="400"') + campoFoto(item?.foto) +
-        campo('desde', 'Desde', item ? item.desde : hoyISO(), 'date') + campo('hasta', 'Hasta (opcional)', item?.hasta, 'date', 'Si la dejás vacía, la promo queda hasta que toques "Terminar promo".'),
+        campo('desde', 'Desde', item ? item.desde : hoyISO(), 'date') + campo('hasta', 'Hasta (opcional)', item?.hasta, 'date', 'Si la dejás vacía, la promo queda hasta que toques "Terminar promo".') +
+        `<fieldset class="campo promo-armar"><legend><b>Que el cliente la arme en la web</b></legend>
+          <small>Si ponés un mínimo, al tocar "Pedir esta promo" el cliente elige los sabores, ve el total y te manda el pedido completo por WhatsApp (puede sumar más y agregar XL). Si lo dejás vacío, solo abre WhatsApp con el título.</small>
+          ${campo('minimo', 'Mínimo de heladitos', item?.minimo ?? '', 'number', 'Por ejemplo: 100.', 'min="1" max="5000" step="1" inputmode="numeric"')}
+          ${campo('precioUnidad', 'Precio por heladito en la promo (opcional)', item?.precioUnidad ?? '', 'number', 'Vacío: se usa el precio por cantidad de siempre.', 'min="1" step="1" inputmode="numeric"')}
+          <div class="campo"><span><b>Sabores que entran</b></span><small>Si no marcás ninguno, entran todos.</small>
+            <div class="sabores-promo">${db.sabores.filter((s) => s.estado !== 'oculto' || item?.sabores?.includes(s.slug)).map((s) => `<label><input type="checkbox" name="sabores" value="${esc(s.slug)}" ${item?.sabores?.includes(s.slug) ? 'checked' : ''}> ${esc(s.nombre)}</label>`).join('')}</div></div>
+        </fieldset>`,
         async (f, d) => {
           const titulo = String(f.get('titulo') || '').trim(); if (!titulo) { avisar('Poné un título'); return false; }
+          const minimo = f.get('minimo') ? Math.round(+f.get('minimo')) : null, precioUnidad = f.get('precioUnidad') ? Math.round(+f.get('precioUnidad')) : null;
+          if (precioUnidad && !minimo) { avisar('Para poner precio de promo, poné también el mínimo'); return false; }
           const foto = await subirFoto(d.querySelector('#f-foto').files[0]); if (foto === false) return false;
-          return hacer({ accion: 'guardar_promo', id: item?.id, titulo, detalle: String(f.get('detalle') || ''), desde: String(f.get('desde') || ''), hasta: String(f.get('hasta') || ''), foto: foto || undefined });
+          return hacer({ accion: 'guardar_promo', id: item?.id, titulo, detalle: String(f.get('detalle') || ''), desde: String(f.get('desde') || ''), hasta: String(f.get('hasta') || ''), foto: foto || undefined, minimo, precioUnidad, sabores: f.getAll('sabores').map(String) });
         });
     }
     if (lista === 'puntos') {
@@ -277,7 +286,7 @@
   function verPedido(p) {
     const fac = p.factura;
     lado('Pedido ' + p.codigo,
-      `<div class="previa detalle-pedido"><b>${esc(p.nombre)}</b>
+      `<div class="previa detalle-pedido"><b>${esc(p.nombre)}</b>${p.promo ? `<span class="chip vigente">Promo: ${esc(p.promo.titulo)}</span>` : ''}
         <span>${p.detalle.map((l) => `${l.cantidad} ${l.tipo === 'xl' ? 'XL' : 'heladitos'} de ${esc(l.sabor)}`).join('<br>')}</span>
         <span>${p.modalidad === 'hoy' ? 'Para hoy' : 'Para otro día'}: <b>${cap(diaTxt(p.fechaEntrega))}</b> (${fecha(p.fechaEntrega)}) · ${p.entrega === 'bolt' ? 'Bolt Envíos' : 'Retiro en Reducto'}</span>
         ${p.unidadesGourmet ? `<span>${p.unidadesGourmet} heladitos a ${gs(p.precioGourmet)}</span>` : ''}${p.unidadesXl ? `<span>${p.unidadesXl} XL a ${gs(p.precioXl)}</span>` : ''}

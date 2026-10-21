@@ -33,6 +33,7 @@ export const pedidoEntrada = z.object({
     })
     .nullable()
     .optional(),
+  promoId: z.number().int().positive().optional(),
   // honeypot: campo invisible para personas; si viene con algo, es un robot
   sitio_web: z.string().max(200).optional(),
 });
@@ -53,8 +54,9 @@ export type ResultadoValidacion =
 export function validarPedido(
   e: PedidoEntrada,
   catalogo: ItemCatalogo[],
-  opciones: { paquete: number; ahora?: Date },
+  opciones: { paquete: number; ahora?: Date; promo?: { titulo: string; minimo: number; sabores: string[] | null } | null },
 ): ResultadoValidacion {
+  const promo = opciones.promo ?? null;
   const errores: string[] = [];
   const lineas: Linea[] = [];
   const vistos = new Set<string>();
@@ -75,6 +77,10 @@ export function validarPedido(
       errores.push(`${item.nombre} está agotado.`);
       continue;
     }
+    if (promo?.sabores && l.tipo === "gourmet" && !promo.sabores.includes(l.slug)) {
+      errores.push(`${item.nombre} no entra en la promo "${promo.titulo}".`);
+      continue;
+    }
     if (e.modalidad === "hoy") {
       if (item.estado !== "disponible") errores.push(`Hoy no hay ${item.nombre}. Podés pedirlo para otro día.`);
       if (l.tipo === "gourmet" && l.cantidad % opciones.paquete !== 0)
@@ -83,6 +89,10 @@ export function validarPedido(
     lineas.push({ tipo: l.tipo, sabor: item.nombre, cantidad: l.cantidad });
   }
   if (!lineas.length && !errores.length) errores.push("Elegí al menos un sabor.");
+  if (promo && !errores.length) {
+    const g = lineas.filter((l) => l.tipo === "gourmet").reduce((a, l) => a + l.cantidad, 0);
+    if (g < promo.minimo) errores.push(`La promo "${promo.titulo}" es desde ${promo.minimo} heladitos. Te faltan ${promo.minimo - g}.`);
+  }
 
   let fechaEntrega = hoyISO(opciones.ahora);
   if (e.modalidad === "otro_dia") {
