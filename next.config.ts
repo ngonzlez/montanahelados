@@ -1,13 +1,15 @@
 import type { NextConfig } from "next";
 
 // Next.js inyecta scripts en línea para hidratar; sin nonce, script-src necesita 'unsafe-inline'.
+// En desarrollo (npm run dev) Next además usa eval y una conexión ws para recargar: solo ahí se permiten.
+const DEV = process.env.NODE_ENV === "development";
 const CSP = [
   "default-src 'self'",
   "img-src 'self' data: blob:",
   "style-src 'self' 'unsafe-inline'",
-  "script-src 'self' 'unsafe-inline'",
+  `script-src 'self' 'unsafe-inline'${DEV ? " 'unsafe-eval'" : ""}`,
   "font-src 'self'",
-  "connect-src 'self'",
+  `connect-src 'self'${DEV ? " ws:" : ""}`,
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
