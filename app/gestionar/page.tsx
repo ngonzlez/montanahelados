@@ -3,6 +3,19 @@
 import { redirect } from "next/navigation";
 import Script from "next/script";
 import { sesionActual } from "@/lib/sesion";
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+
+// Versión del script del panel según su contenido: cada deploy con cambios cambia la URL,
+// así ni el navegador ni un CDN delante (Cloudflare) pueden servir una copia vieja.
+const VERSION_PANEL = (() => {
+  try {
+    return createHash("sha1").update(readFileSync(path.join(process.cwd(), "public/panel/panel.js"))).digest("hex").slice(0, 10);
+  } catch {
+    return String(Date.now());
+  }
+})();
 
 export const dynamic = "force-dynamic";
 
@@ -38,7 +51,7 @@ export default async function Panel() {
         </nav>
         <main className="contenido" id="contenido" tabIndex={-1}><p className="cargando">Cargando…</p></main>
       </div>
-      <Script src="/panel/panel.js" strategy="afterInteractive" />
+      <Script src={`/panel/panel.js?v=${VERSION_PANEL}`} strategy="afterInteractive" />
     </>
   );
 }
