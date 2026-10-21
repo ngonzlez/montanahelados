@@ -163,3 +163,12 @@ select.inline{width:auto}
 .pie-texto{display:flex;gap:6px;align-items:center}
 .enlace{background:none;border:0;padding:0;font-weight:800;text-decoration:underline;cursor:pointer;color:var(--choco)}
 .guardar-fijo{position:sticky;bottom:0;padding:12px 0;background:var(--vainilla);max-width:760px}
+
+/* fotos de la web */
+.foto-web{display:grid;grid-template-columns:140px minmax(0,1fr);gap:16px;align-items:start;padding:14px 0;border-top:2px dotted var(--linea)}
+.foto-web>img{width:140px;height:140px;object-fit:cover;border:3px solid var(--choco);border-radius:16px;background:var(--vainilla)}
+.foto-web>img.redonda{border-radius:50%}
+.foto-datos{display:grid;gap:10px;min-width:0}
+.foto-datos>small{color:var(--suave);font-weight:700}
+.foto-datos .campo span{font-weight:800}
+@media (max-width:560px){.foto-web{grid-template-columns:1fr}.foto-web>img{width:100%;height:180px}}

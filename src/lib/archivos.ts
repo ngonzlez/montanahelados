@@ -12,7 +12,7 @@ const FORMATOS = new Set(["jpeg", "png", "webp", "heif"]);
 const raiz = () => path.resolve(process.env.ARCHIVOS_DIR ?? "./.data/archivos");
 
 /** Verifica el tipo real (no la extensión), achica a 1200 px y guarda en WebP con nombre propio. */
-export async function guardarFoto(datos: Buffer): Promise<{ ok: true; ruta: string } | { ok: false; error: string }> {
+export async function guardarFoto(datos: Buffer, uso: "foto" | "compartir" = "foto"): Promise<{ ok: true; ruta: string } | { ok: false; error: string }> {
   if (datos.length > MAX_BYTES) return { ok: false, error: "La foto pesa más de 8 MB." };
   let meta;
   try {
@@ -21,8 +21,11 @@ export async function guardarFoto(datos: Buffer): Promise<{ ok: true; ruta: stri
     return { ok: false, error: "Ese archivo no es una foto." };
   }
   if (!meta.format || !FORMATOS.has(meta.format)) return { ok: false, error: "Subí una foto JPG, PNG o WebP." };
-  const salida = await sharp(datos).rotate().resize({ width: 1200, height: 1200, fit: "inside", withoutEnlargement: true }).webp({ quality: 82 }).toBuffer();
-  const nombre = `${Date.now().toString(36)}-${randomBytes(6).toString("hex")}.webp`;
+  // la imagen para compartir va en JPG 1200×630 (WhatsApp y redes no siempre muestran WebP)
+  const salida = uso === "compartir"
+    ? await sharp(datos).rotate().resize({ width: 1200, height: 630, fit: "cover", position: "attention" }).flatten({ background: "#FCF1DA" }).jpeg({ quality: 82, mozjpeg: true }).toBuffer()
+    : await sharp(datos).rotate().resize({ width: 1200, height: 1200, fit: "inside", withoutEnlargement: true }).webp({ quality: 82 }).toBuffer();
+  const nombre = `${Date.now().toString(36)}-${randomBytes(6).toString("hex")}.${uso === "compartir" ? "jpg" : "webp"}`;
   const dir = path.join(raiz(), "fotos");
   await mkdir(dir, { recursive: true });
   await writeFile(path.join(dir, nombre), salida);
@@ -31,7 +34,7 @@ export async function guardarFoto(datos: Buffer): Promise<{ ok: true; ruta: stri
 
 /** Lee un archivo público del volumen, sin permitir salir de la carpeta. */
 export async function leerPublico(partes: string[]): Promise<Buffer | null> {
-  if (partes[0] !== "fotos" || partes.length !== 2 || !/^[a-z0-9-]+\.webp$/.test(partes[1])) return null;
+  if (partes[0] !== "fotos" || partes.length !== 2 || !/^[a-z0-9-]+\.(webp|jpg)$/.test(partes[1])) return null;
   const archivo = path.resolve(raiz(), "fotos", partes[1]);
   if (!archivo.startsWith(path.join(raiz(), "fotos") + path.sep)) return null;
   try {

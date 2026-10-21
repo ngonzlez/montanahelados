@@ -6,6 +6,7 @@ import { db, schema as s } from "@/db";
 import { hoyISO, sumarDias } from "./fechas";
 import { telefonoVisible } from "./formato";
 import { enviarEmail, plantillaPrueba } from "./email";
+import { esClaveFoto, fotosParaPanel, FOTOS_WEB } from "@/content/fotos";
 import { esClaveTexto, maxTexto, textosParaPanel, GRUPOS_TEXTOS } from "@/content/textos";
 
 type Usuario = { id: string; email: string; name: string };
@@ -45,6 +46,7 @@ export async function leerEstado() {
       sena: a.pedidos?.sena_porcentaje ?? 50,
       pago: a.datos_pago_privado ?? "",
     },
+    fotos: fotosParaPanel(a.fotos_web),
     textos: textosParaPanel(a.textos_web, { paquete: a.pedidos?.paquete_unidades ?? 25, sena: a.pedidos?.sena_porcentaje ?? 50 }),
     resumen: { nuevos: nuevos[0].n, manana: manana[0].n },
     papelera: borrados,
@@ -128,6 +130,7 @@ const texto = (max: number) => z.string().trim().max(max);
 const https = z.string().trim().max(300).refine((u) => u === "" || /^https:\/\/[^\s"'<>]+$/.test(u), "El link tiene que empezar con https://");
 const mapa = z.string().trim().max(300).refine((u) => /^https:\/\/(maps\.app\.goo\.gl|goo\.gl\/maps|www\.google\.com\/maps|maps\.google\.com)\//.test(u), "El link tiene que ser de Google Maps.");
 const foto = z.string().regex(/^\/(media\/fotos\/[a-z0-9-]+\.webp|fotos\/[A-Za-z0-9_-]+\.webp)$/).nullable().optional();
+const fotoWeb = z.string().regex(/^\/media\/fotos\/[a-z0-9-]+\.(webp|jpg)$/);
 const color = z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Color inválido");
 const fechaOpcional = z.union([z.literal(""), z.string().regex(/^\d{4}-\d{2}-\d{2}$/)]);
 const lista = z.enum(["sabores", "xl"]);
@@ -157,6 +160,7 @@ export const accion = z.discriminatedUnion("accion", [
     sena: z.number().int().min(0).max(100), pago: texto(600),
   }),
   z.object({ accion: z.literal("email_prueba") }),
+  z.object({ accion: z.literal("foto_web"), clave: z.string().max(30), ruta: fotoWeb.nullable().optional(), original: z.boolean().optional(), alt: texto(160) }),
   z.object({ accion: z.literal("textos"), valores: z.record(z.string(), z.string().max(400)) }),
 ]);
 export type Accion = z.infer<typeof accion>;
@@ -325,6 +329,20 @@ export async function ejecutar(a: Accion, u: Usuario): Promise<Resultado> {
       await guardarAjuste("datos_pago_privado", a.pago);
       await auditar(u, "ajustes", null, "guardar", null, "ajustes");
       return { ok: true, aviso: "Ajustes guardados" };
+    }
+    case "foto_web": {
+      if (!esClaveFoto(a.clave)) return { ok: false, error: "Esa foto no existe." };
+      const def = FOTOS_WEB.find((f) => f.clave === a.clave)!;
+      if (a.ruta && def.uso === "compartir" && !a.ruta.endsWith(".jpg")) return { ok: false, error: "La imagen para compartir tiene que subirse de nuevo." };
+      const [fila] = await db.select().from(s.ajustes).where(eq(s.ajustes.clave, "fotos_web"));
+      const todas = { ...((fila?.valor ?? {}) as Record<string, { ruta?: string; alt?: string }>) };
+      const actual = todas[a.clave] ?? {};
+      const nueva = { ruta: a.original ? undefined : a.ruta ?? actual.ruta, alt: a.alt || undefined };
+      if (!nueva.ruta && !nueva.alt) delete todas[a.clave];
+      else todas[a.clave] = nueva;
+      await guardarAjuste("fotos_web", todas);
+      await auditar(u, "ajustes", null, `foto ${a.clave}`, actual.ruta ?? "original", nueva.ruta ?? "original");
+      return { ok: true, aviso: a.original ? "Volvió la foto original" : "Foto guardada. Ya se ve en la web." };
     }
     case "textos": {
       const limpio: Record<string, string> = {};

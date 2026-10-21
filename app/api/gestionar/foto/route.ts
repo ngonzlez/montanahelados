@@ -9,6 +9,6 @@ export async function POST(req: Request) {
   const form = await req.formData().catch(() => null);
   const f = form?.get("foto");
   if (!(f instanceof File)) return NextResponse.json({ ok: false, error: "No llegó la foto." }, { status: 400 });
-  const r = await guardarFoto(Buffer.from(await f.arrayBuffer()));
+  const r = await guardarFoto(Buffer.from(await f.arrayBuffer()), form?.get("uso") === "compartir" ? "compartir" : "foto");
   return NextResponse.json(r, { status: r.ok ? 200 : 422 });
 }

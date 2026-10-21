@@ -6,6 +6,7 @@ import { datosInicio } from "@/lib/inicio";
 import { gs } from "@/lib/formato";
 import { enlaceWhatsapp, mensajePromo, MENSAJE_PUNTOS_VENTA } from "@/lib/whatsapp";
 import { textosFinales } from "@/content/textos";
+import { fotosFinales } from "@/content/fotos";
 import Texto from "@/components/Texto";
 import type { Metadata } from "next";
 
@@ -21,7 +22,8 @@ export async function generateMetadata(): Promise<Metadata> {
   const d = await datosInicio();
   const pe = (d.ajustes.pedidos ?? {}) as { paquete_unidades?: number; sena_porcentaje?: number };
   const t = textosFinales(d.ajustes.textos_web, { paquete: pe.paquete_unidades ?? 25, sena: pe.sena_porcentaje ?? 50 });
-  return { title: t.seo_titulo, description: t.seo_descripcion, openGraph: { title: t.seo_titulo, description: t.seo_descripcion, images: ["/compartir.jpg"], locale: "es_PY", type: "website" } };
+  const f = fotosFinales(d.ajustes.fotos_web);
+  return { title: t.seo_titulo, description: t.seo_descripcion, openGraph: { title: t.seo_titulo, description: t.seo_descripcion, images: [{ url: f.compartir.src, width: 1200, height: 630, alt: t.seo_titulo }], locale: "es_PY", type: "website" } };
 }
 
 export default async function Inicio() {
@@ -36,6 +38,7 @@ export default async function Inicio() {
   const paquete = reglas.paquete_unidades ?? 25;
   const sena = reglas.sena_porcentaje ?? 50;
   const t = textosFinales(a.textos_web, { paquete, sena });
+  const f = fotosFinales(a.fotos_web);
 
   const escG = d.escalones.filter((e) => e.producto === "gourmet").sort((x, y) => x.desde - y.desde);
   const escX = d.escalones.filter((e) => e.producto === "xl").sort((x, y) => x.desde - y.desde);
@@ -174,8 +177,8 @@ export default async function Inicio() {
             <section className="xl" id="xl" data-sabor="#CFE2A4" aria-labelledby="t-xl">
               <div className="wrap">
                 <div className="fotos-xl">
-                  <figure className="pop f1"><img loading="lazy" decoding="async" src="/fotos/IMG_2277.webp" alt="Helado XL de Oreo cortado al medio, con galletitas trituradas" /><figcaption>{t.xl_pie1}</figcaption></figure>
-                  <figure className="pop f2"><img loading="lazy" decoding="async" src="/fotos/IMG_2223.webp" alt="Helado XL cortado, cremoso por dentro" /><figcaption>{t.xl_pie2}</figcaption></figure>
+                  <figure className="pop f1"><img loading="lazy" decoding="async" src={f.xl_foto1.src} alt={f.xl_foto1.alt} /><figcaption>{t.xl_pie1}</figcaption></figure>
+                  <figure className="pop f2"><img loading="lazy" decoding="async" src={f.xl_foto2.src} alt={f.xl_foto2.alt} /><figcaption>{t.xl_pie2}</figcaption></figure>
                 </div>
                 <div>
                   <p className="etiqueta">{t.xl_etiqueta}</p>
@@ -264,7 +267,7 @@ export default async function Inicio() {
               <p><Texto t={t.reventa_nota} /></p>
               <p><a className="boton" href="#arma" style={{ marginTop: 6 }}>Armar mi pedido</a></p>
             </div>
-            <div className="foto-caja"><img loading="lazy" decoding="async" src="/fotos/heladitos.webp" alt="Conservadora llena de heladitos ordenados por sabor" /></div>
+            <div className="foto-caja"><img loading="lazy" decoding="async" src={f.reventa.src} alt={f.reventa.alt} /></div>
           </div>
         </section>
 
@@ -294,7 +297,7 @@ export default async function Inicio() {
         <Borde img="sello3" antes={d.puntos.length ? "pistacho" : "frutilla"} w={32} h={34} />
         <section className="hanna" id="hanna" data-sabor="#F4B9BF" aria-labelledby="t-hanna">
           <div className="wrap">
-            <figure className="foto-hanna"><img loading="lazy" decoding="async" src="/fotos/hanna-circulo.webp" alt="Hanna, la golden de la familia, festejando su cumpleaños" /><span className="globo">{t.hanna_globo}</span></figure>
+            <figure className="foto-hanna"><img loading="lazy" decoding="async" src={f.hanna.src} alt={f.hanna.alt} /><span className="globo">{t.hanna_globo}</span></figure>
             <div>
               <h2 id="t-hanna">{t.hanna_titulo}</h2>
               <p><Texto t={t.hanna_texto} /></p>

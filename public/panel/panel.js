@@ -12,7 +12,7 @@
   const ESTADOS_PEDIDO = [['nuevo', 'Nuevo'], ['confirmado', 'Confirmado'], ['sena_recibida', 'Seña recibida'], ['entregado', 'Entregado'], ['cancelado', 'Cancelado']];
   const NOMBRE_PEDIDO = Object.fromEntries(ESTADOS_PEDIDO);
   const PRODUCTO = { gourmet: 'Heladito', xl: 'Helado XL' };
-  const NOMBRES = { inicio: 'Inicio', pedidos: 'Pedidos', sabores: 'Sabores', xl: 'Helados XL', precios: 'Precios por cantidad', promos: 'Promos', puntos: 'Puntos de venta', textos: 'Textos de la web', ajustes: 'Ajustes', papelera: 'Papelera' };
+  const NOMBRES = { inicio: 'Inicio', pedidos: 'Pedidos', sabores: 'Sabores', xl: 'Helados XL', precios: 'Precios por cantidad', promos: 'Promos', puntos: 'Puntos de venta', textos: 'Textos y fotos', ajustes: 'Ajustes', papelera: 'Papelera' };
 
   let db = null;          // estado del panel (todo menos pedidos)
   let ped = null;         // página actual de pedidos
@@ -162,7 +162,16 @@
         return `<div class="campo campo-texto${c.valor && c.valor !== c.original ? ' cambiado' : ''}"><label for="t-${c.clave}">${esc(c.etiqueta)}</label>${input}
           <small class="pie-texto"><span data-cuenta="${c.clave}">${valor.length}</span>/${c.max}${c.valor && c.valor !== c.original ? ` · <button type="button" class="enlace" data-original="${c.clave}">Volver al original</button>` : ''}</small></div>`;
       };
-      return `<div class="cabeza"><h2>Textos de la web</h2><a class="btn chico" href="/" target="_blank" rel="noopener">Ver la web</a></div>
+      const fotos = `<details class="bloque bloque-textos" open><summary><h3>Fotos de la web</h3></summary>
+        <p style="margin:0"><small>Las fotos de los sabores, los Helados XL y las promos se cambian en sus propias secciones del menú.</small></p>
+        ${db.fotos.map((f) => `<form class="foto-web" data-foto="${f.clave}" novalidate>
+          <img src="${esc(f.ruta || f.original)}" alt="" class="${f.clave === 'hanna' ? 'redonda' : ''}">
+          <div class="foto-datos"><b>${esc(f.etiqueta)}</b><small>${esc(f.donde)}${f.ruta ? ' · <b>cambiada</b>' : ''}</small>
+            <label class="campo"><span>Foto nueva</span><input type="file" name="archivo" accept="image/jpeg,image/png,image/webp"><small>JPG, PNG o WebP, hasta 8 MB. ${esc(f.ayuda)}</small></label>
+            <label class="campo"><span>Qué se ve en la foto</span><input type="text" name="alt" maxlength="160" value="${esc(f.altGuardado || f.alt)}" data-alt-original="${esc(f.alt)}"><small>Lo leen los celulares de personas que no ven y Google.</small></label>
+            <div class="acciones" style="justify-content:flex-start"><button class="btn chico pri" type="submit">Guardar foto</button>${f.ruta ? `<button class="btn chico" type="button" data-foto-original="${f.clave}">Volver a la original</button>` : ''}</div>
+          </div></form>`).join('')}</details>`;
+      return `<div class="cabeza"><h2>Textos y fotos</h2><a class="btn chico" href="/" target="_blank" rel="noopener">Ver la web</a></div>${fotos}
       <p class="previa">Cambiá los títulos y textos de cada parte de la web. Lo que dejes vacío vuelve al texto original. Para que algo salga en <b>negrita</b>, ponelo entre dos asteriscos: **así**.</p>
       <form id="form-textos" novalidate>
       ${db.textos.map((g) => `<details class="bloque bloque-textos" ${g.id === 'inicio' ? 'open' : ''}><summary><h3>${esc(g.titulo)}</h3><span class="contador">${g.campos.filter((c) => c.valor && c.valor !== c.original).length || ''}</span></summary>${g.campos.map(campoTexto).join('')}</details>`).join('')}
@@ -302,6 +311,7 @@
     if (d.accion === 'prueba') { if ($('#f-email').value.trim() !== db.ajustes.email) return avisar('Primero guardá los ajustes con el email nuevo'); return hacer({ accion: 'email_prueba' }, { recargar: false }); }
     if (d.accion === 'copiar-pago') { const v = $('#f-pago').value; try { navigator.clipboard.writeText(v).then(() => avisar('Copiado'), () => {}); } catch (err) {} return; }
     if (d.accion === 'cambiar-clave') return cambiarClave();
+    if (d.fotoOriginal) { const f = db.fotos.find((x) => x.clave === d.fotoOriginal); return confirmar(`¿Volver a la foto original de "${f.etiqueta}"?`, () => hacer({ accion: 'foto_web', clave: f.clave, original: true, alt: '' }), 'Volver a la original'); }
     if (t.matches('button[data-original]')) { const el = cont.querySelector('#t-' + d.original); el.value = el.dataset.original; el.dispatchEvent(new Event('input', { bubbles: true })); el.focus(); return avisar('Volvió al original. Tocá "Guardar textos".'); }
     if (d.nuevo) return formulario(d.nuevo);
     if (d.editar) return formulario(d.editar, buscar(d.editar, d.id));
@@ -336,6 +346,25 @@
     else { render(); reponer(); }
   });
   cont.addEventListener('submit', async (e) => {
+    if (e.target.matches('form.foto-web')) {
+      e.preventDefault();
+      const form = e.target, clave = form.dataset.foto, def = db.fotos.find((x) => x.clave === clave);
+      const b = form.querySelector('[type=submit]'); b.disabled = true; b.textContent = 'Subiendo…';
+      try {
+        const file = form.archivo.files[0];
+        let ruta;
+        if (file) {
+          if (file.size > 8 * 1024 * 1024) return avisar('La foto pesa más de 8 MB');
+          const fd = new FormData(); fd.append('foto', file); if (def.uso) fd.append('uso', def.uso);
+          const d = await pedir('/api/gestionar/foto', { method: 'POST', body: fd });
+          if (!d.ok) return avisar(d.error || 'No se pudo subir la foto');
+          ruta = d.ruta;
+        }
+        const alt = form.alt.value.trim();
+        await hacer({ accion: 'foto_web', clave, ruta, alt: alt === form.alt.dataset.altOriginal ? '' : alt });
+      } finally { if (b.isConnected) { b.disabled = false; b.textContent = 'Guardar foto'; } }
+      return;
+    }
     if (e.target.id === 'form-textos') {
       e.preventDefault();
       const valores = {};
