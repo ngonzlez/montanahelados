@@ -25,6 +25,12 @@ type Props = {
 };
 
 type Modo = "otro_dia" | "hoy";
+/** RUC paraguayo: números y un guion antes del dígito verificador. Si escriben solo números, el guion se pone solo. */
+const formatearRuc = (v: string) => {
+  const limpio = v.replace(/[^\d-]/g, "").replace(/-+/g, "-");
+  if (limpio.includes("-")) return limpio;
+  return limpio.length >= 2 ? `${limpio.slice(0, -1)}-${limpio.slice(-1)}` : limpio;
+};
 const avisar = (t: string) => window.dispatchEvent(new CustomEvent("mh:aviso", { detail: t }));
 
 export default function Armador(p: Props) {
@@ -176,7 +182,9 @@ export default function Armador(p: Props) {
     if (conFactura) {
       const e: string[] = [];
       if (fac.nombre_apellido.trim().length < 3) e.push("Para la factura falta el nombre y apellido.");
-      if (!/^\d{1,8}-\d$/.test(fac.ruc.trim())) e.push("El RUC va con guion y dígito verificador, por ejemplo 1234567-8.");
+      const ruc = formatearRuc(fac.ruc.trim());
+      if (ruc !== fac.ruc) setFac((f) => ({ ...f, ruc }));
+      if (!/^\d{1,8}-\d$/.test(ruc)) e.push("El RUC va con guion y dígito verificador, por ejemplo 1234567-8.");
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fac.correo.trim())) e.push("Revisá el correo para la factura.");
       if (e.length) return setErrores(e);
     }
@@ -197,7 +205,7 @@ export default function Armador(p: Props) {
           entrega,
           fechaEntrega: modo === "otro_dia" ? fecha : undefined,
           nombre,
-          factura: conFactura ? fac : null,
+          factura: conFactura ? { ...fac, ruc: formatearRuc(fac.ruc.trim()) } : null,
           promoId: promo?.id,
           sitio_web: trampa || undefined,
         }),
@@ -326,7 +334,10 @@ export default function Armador(p: Props) {
             <label htmlFor="fac-nombre">Nombre y apellido</label>
             <input id="fac-nombre" type="text" autoComplete="name" maxLength={120} value={fac.nombre_apellido} onChange={(e) => setFac({ ...fac, nombre_apellido: e.target.value })} />
             <label htmlFor="fac-ruc">RUC</label>
-            <input id="fac-ruc" type="text" inputMode="numeric" maxLength={12} placeholder="1234567-8" value={fac.ruc} onChange={(e) => setFac({ ...fac, ruc: e.target.value })} />
+            <input id="fac-ruc" type="text" inputMode="text" autoComplete="off" maxLength={12} placeholder="1234567-8" aria-describedby="ayuda-ruc" value={fac.ruc}
+              onChange={(e) => setFac({ ...fac, ruc: e.target.value.replace(/[^\d-]/g, "") })}
+              onBlur={() => setFac((f) => ({ ...f, ruc: formatearRuc(f.ruc) }))} />
+            <small className="ayuda" id="ayuda-ruc">Con el guion, por ejemplo 1234567-8. Si escribís solo los números, el guion se pone solo.</small>
             <label htmlFor="fac-correo">Correo</label>
             <input id="fac-correo" type="email" autoComplete="email" maxLength={120} aria-describedby="ayuda-correo" value={fac.correo} onChange={(e) => setFac({ ...fac, correo: e.target.value })} />
             <small className="ayuda" id="ayuda-correo">La factura te llega a este correo.</small>
