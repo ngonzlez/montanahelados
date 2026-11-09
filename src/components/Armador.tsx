@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { calcularPedido, type Escalon, type Linea } from "@/lib/precios";
 import { mensajePedido, AVISO_ABIERTO } from "@/lib/whatsapp";
 import { gs } from "@/lib/formato";
-import { mananaISO } from "@/lib/fechas";
+import { diasDeEntrega, hayEntrega, horariosDisponibles, hoyISO, nombreDia, sumarDias } from "@/lib/fechas";
 import arte from "@/content/arte.json";
 
 type Estado = "disponible" | "hoy_no_hay" | "agotado" | "oculto";
@@ -18,6 +18,9 @@ type Props = {
   escalones: Escalon[];
   senaPorcentaje: number;
   paquete: number;
+  horaDesde: number;
+  horaHasta: number;
+  diasMax: number;
   pasoAnticipado: number;
   atajosGourmet: number[];
   atajosXl: number[];
@@ -46,7 +49,9 @@ export default function Armador(p: Props) {
   const [listo, setListo] = useState<{ codigo: string; enlace: string } | null>(null);
   const [copiado, setCopiado] = useState(false);
   const [trampa, setTrampa] = useState("");
-  const [minFecha, setMinFecha] = useState("");
+  const [hora, setHora] = useState("");
+  // días y horarios se calculan en el navegador (dependen de la hora actual); se renuevan cada minuto
+  const [ahora, setAhora] = useState<Date | null>(null);
   const [promoId, setPromoId] = useState<number | null>(null);
   const promo = p.promos.find((x) => x.id === promoId) ?? null;
   const modoRef = useRef(modo);
@@ -54,9 +59,21 @@ export default function Armador(p: Props) {
   const promoRef = useRef<PromoArmador | null>(null);
   promoRef.current = promo;
 
-  useEffect(() => setMinFecha(mananaISO()), []);
+  useEffect(() => {
+    setAhora(new Date());
+    const t = setInterval(() => setAhora(new Date()), 60_000);
+    return () => clearInterval(t);
+  }, []);
+  const dias = useMemo(() => (ahora ? diasDeEntrega(p.diasMax, ahora) : []), [ahora, p.diasMax]);
+  const horasHoy = ahora ? horariosDisponibles(p.horaDesde, p.horaHasta, true, ahora) : [];
+  const hoySePuede = !!ahora && hayEntrega(hoyISO(ahora)) && horasHoy.length > 0;
+  const horas = modo === "hoy" ? horasHoy : horariosDisponibles(p.horaDesde, p.horaHasta, false);
+  // si el horario elegido ya no está (pasó la hora o cambió el modo), se borra
+  useEffect(() => { if (hora && ahora && !horas.includes(hora)) setHora(""); }, [hora, horas, ahora]);
+  // si "para hoy" deja de ser posible (cierre o domingo), vuelve a "para otro día"
+  useEffect(() => { if (ahora && modo === "hoy" && !hoySePuede) setModo("otro_dia"); }, [ahora, modo, hoySePuede]);
   // si cambia el pedido después de abrir WhatsApp, el aviso de "listo" ya no corresponde
-  useEffect(() => setListo(null), [cant, entrega, fecha, conFactura, promoId]);
+  useEffect(() => setListo(null), [cant, entrega, fecha, hora, conFactura, promoId]);
   // los errores viejos se borran apenas el cliente corrige el pedido
   useEffect(() => setErrores([]), [cant, promoId]);
 
@@ -121,7 +138,6 @@ export default function Armador(p: Props) {
           const k = clave("g", it.slug), v = n[k] ?? 0;
           if (!v) continue;
           if (!sePuede(it, "hoy")) { n[k] = 0; quitados++; }
-          else if (v % p.paquete) n[k] = Math.ceil(v / p.paquete) * p.paquete;
         }
         for (const it of p.xl) if (!sePuede(it, "hoy")) n[clave("x", it.slug)] = 0;
         return n;
@@ -155,7 +171,6 @@ export default function Armador(p: Props) {
       : `¡Listo! ${c.unidadesGourmet} heladitos a ${gs(c.precioGourmet)} cada uno. Podés sumar más sabores o Helados XL.`;
   } else if (c.unidadesGourmet) {
     nota = `${c.unidadesGourmet} heladitos a ${gs(c.precioGourmet)} cada uno.`;
-    if (modo === "hoy") { const n = c.unidadesGourmet / p.paquete; nota += ` Son ${n} paquete${n > 1 ? "s" : ""} de ${p.paquete}.`; }
     nota += siguienteG ? ` Sumá ${siguienteG.desde - c.unidadesGourmet} más y cada uno te sale ${gs(siguienteG.precio)}.` : " Tenés el mejor precio.";
   } else if (escG.length > 1) {
     nota = escG.slice(1).map((e, i) => `${i ? "y desde" : "Desde"} ${e.desde} heladitos cada uno sale ${gs(e.precio)}`).join(", ") + ".";
@@ -170,7 +185,7 @@ export default function Armador(p: Props) {
 
   const mensaje = mensajePedido({
     modalidad: modo, lineas, calculo: c, senaPorcentaje: p.senaPorcentaje, entrega,
-    fechaEntrega: fecha || "", nombre, factura: conFactura ? fac : null, promo,
+    fechaEntrega: fecha || "", hora, nombre, factura: conFactura ? fac : null, promo,
   });
 
   async function mandar() {
@@ -179,6 +194,7 @@ export default function Armador(p: Props) {
     if (promo && faltanPromo) return setErrores([`La promo es desde ${promo.minimo} heladitos. Te faltan ${faltanPromo}.`]);
     if (!nombre.trim()) return setErrores(["Escribí tu nombre o el de tu negocio."]);
     if (modo === "otro_dia" && !fecha) return setErrores(["Elegí para qué día es el pedido."]);
+    if (!hora) return setErrores([entrega === "retiro" ? "Elegí a qué hora lo retirás." : "Elegí a qué hora lo mandamos."]);
     if (conFactura) {
       const e: string[] = [];
       if (fac.nombre_apellido.trim().length < 3) e.push("Para la factura falta el nombre y apellido.");
@@ -204,6 +220,7 @@ export default function Armador(p: Props) {
           ].filter((l) => l.cantidad > 0),
           entrega,
           fechaEntrega: modo === "otro_dia" ? fecha : undefined,
+          hora,
           nombre,
           factura: conFactura ? { ...fac, ruc: formatearRuc(fac.ruc.trim()) } : null,
           promoId: promo?.id,
@@ -233,7 +250,7 @@ export default function Armador(p: Props) {
 
   const fila = (t: "g" | "x", it: ItemArmador, atajos: number[]) => {
     const k = clave(t, it.slug), v = cant[k] ?? 0, ok = sePuede(it, modo);
-    const paso = t === "g" ? (modo === "hoy" ? p.paquete : p.pasoAnticipado) : 1;
+    const paso = t === "g" ? p.pasoAnticipado : 1;
     const id = `${t}-${it.slug}`;
     const estado = it.estado === "agotado" ? "Agotado" : !ok ? "Hoy no hay" : "";
     return (
@@ -280,17 +297,17 @@ export default function Armador(p: Props) {
           <button type="button" role="radio" aria-checked={modo === "otro_dia"} onClick={() => cambiarModo("otro_dia")}>
             Para otro día<small>pedís con 1 día o más · elegís todos los sabores</small>
           </button>
-          <button type="button" role="radio" aria-checked={modo === "hoy"} onClick={() => cambiarModo("hoy")}>
-            Para hoy<small>paquetes de {p.paquete}, un sabor por paquete</small>
+          <button type="button" role="radio" aria-checked={modo === "hoy"} onClick={() => cambiarModo("hoy")} disabled={!!ahora && !hoySePuede}>
+            Para hoy<small>{!ahora || hoySePuede ? "elegís los sabores que hay hoy" : ahora && !hayEntrega(hoyISO(ahora)) ? "los domingos no hay entregas" : "por hoy ya cerramos"}</small>
           </button>
         </div>
         <p className="modo-nota">
           {modo === "hoy"
-            ? `Para hoy: los heladitos van en paquetes de ${p.paquete}, un sabor por paquete, según lo que haya. Los XL, del sabor que quieras. Te confirmamos por WhatsApp.`
+            ? `Para hoy: elegís los sabores que tenemos hoy y la cantidad que quieras. Retirás o te lo mandamos de ${p.horaDesde} a ${p.horaHasta} h. Te confirmamos por WhatsApp.`
             : "Para otro día: pedís 1 día antes o más, elegís los sabores que quieras y los mezclamos."}
         </p>
         <fieldset className="lista-pedido">
-          <legend>Heladitos <small>{modo === "hoy" ? `paquetes de ${p.paquete}, un sabor por paquete` : `de a ${p.pasoAnticipado}, mezclá como quieras`}</small></legend>
+          <legend>Heladitos <small>{`de a ${p.pasoAnticipado}, mezclá como quieras`}</small></legend>
           <div>{saboresVisibles.map((s) => fila("g", s, p.atajosGourmet))}</div>
         </fieldset>
         {p.xl.length ? (
@@ -325,9 +342,23 @@ export default function Armador(p: Props) {
         {modo === "otro_dia" ? (
           <div style={{ display: "grid", gap: 8 }}>
             <label htmlFor="pedido-fecha">¿Para qué día?</label>
-            <input id="pedido-fecha" type="date" min={minFecha} value={fecha} onChange={(e) => setFecha(e.target.value)} />
+            <select id="pedido-fecha" value={fecha} onChange={(e) => setFecha(e.target.value)} aria-describedby="ayuda-fecha">
+              <option value="">Elegí el día</option>
+              {dias.map((d) => (
+                <option key={d} value={d}>{ahora && d === sumarDias(hoyISO(ahora), 1) ? "Mañana, " : ""}{nombreDia(d)} {d.slice(8, 10)}/{d.slice(5, 7)}</option>
+              ))}
+            </select>
+            <small className="ayuda" id="ayuda-fecha">De lunes a sábado. Los domingos no hay entregas.</small>
           </div>
         ) : null}
+        <div style={{ display: "grid", gap: 8 }}>
+          <label htmlFor="pedido-hora">{entrega === "retiro" ? "¿A qué hora lo retirás?" : "¿A qué hora te lo mandamos?"}</label>
+          <select id="pedido-hora" value={hora} onChange={(e) => setHora(e.target.value)} aria-describedby="ayuda-hora">
+            <option value="">Elegí la hora</option>
+            {horas.map((h) => <option key={h} value={h}>{h} h</option>)}
+          </select>
+          <small className="ayuda" id="ayuda-hora">De {p.horaDesde} a {p.horaHasta} h. Desde las {p.horaDesde} ya estamos en el local.</small>
+        </div>
         <label className="check-factura"><input type="checkbox" checked={conFactura} onChange={(e) => setConFactura(e.target.checked)} /> Necesito factura electrónica</label>
         {conFactura ? (
           <div className="campos-factura">

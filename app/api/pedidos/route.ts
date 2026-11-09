@@ -43,7 +43,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, errores: ["Esa promo ya terminó. Quitala y mandá el pedido normal, o escribinos por WhatsApp."] }, { status: 422 });
   }
   const reglas: Partial<NonNullable<typeof ajustes.pedidos>> = ajustes.pedidos ?? {};
-  const v = validarPedido(e, catalogo, { paquete: reglas.paquete_unidades ?? 25, promo });
+  const horario = { desde: reglas.hora_desde ?? 10, hasta: reglas.hora_hasta ?? 18 };
+  const v = validarPedido(e, catalogo, { horario, promo });
   if (!v.ok) return NextResponse.json({ ok: false, errores: v.errores }, { status: 422 });
 
   const senaPct = reglas.sena_porcentaje ?? 50;
@@ -68,6 +69,7 @@ export async function POST(req: NextRequest) {
         sena: calculo.sena,
         entrega: e.entrega,
         fechaEntrega: v.fechaEntrega,
+        hora: v.hora,
         nombre: e.nombre,
         factura,
         promo: promoGuardada,
@@ -85,7 +87,7 @@ export async function POST(req: NextRequest) {
         datos: {
           pedidoId: p.id, codigo, modalidad: e.modalidad, lineas: v.lineas,
           unidades: calculo.unidadesGourmet + calculo.unidadesXl, total: calculo.total, sena: calculo.sena,
-          entrega: e.entrega, fechaEntrega: v.fechaEntrega, nombre: e.nombre, factura: !!factura, promo: promo?.titulo ?? null,
+          entrega: e.entrega, fechaEntrega: v.fechaEntrega, hora: v.hora, nombre: e.nombre, factura: !!factura, promo: promo?.titulo ?? null,
           enlacePanel: `${process.env.SITE_URL ?? ""}/gestionar#pedido-${p.id}`,
         },
       });
@@ -94,7 +96,7 @@ export async function POST(req: NextRequest) {
   });
 
   const numero = ajustes.whatsapp?.valor ?? "595986759890";
-  const texto = mensajePedido({ modalidad: e.modalidad, lineas: v.lineas, calculo, senaPorcentaje: senaPct, entrega: e.entrega, fechaEntrega: v.fechaEntrega, nombre: e.nombre, codigo: guardado.codigo, factura, promo });
+  const texto = mensajePedido({ modalidad: e.modalidad, lineas: v.lineas, calculo, senaPorcentaje: senaPct, entrega: e.entrega, fechaEntrega: v.fechaEntrega, hora: v.hora, nombre: e.nombre, codigo: guardado.codigo, factura, promo });
   return NextResponse.json({ ok: true, codigo: guardado.codigo, enlace: enlaceWhatsapp(numero, texto), aviso: AVISO_ABIERTO, calculo });
 }
 

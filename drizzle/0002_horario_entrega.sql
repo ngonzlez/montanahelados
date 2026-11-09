@@ -1,0 +1,8 @@
+ALTER TABLE "pedido" ADD COLUMN "hora" text;--> statement-breakpoint
+-- Textos que hablaban de "paquetes de 25 de un solo sabor" para hoy: se actualizan solo si la dueña no los cambió.
+UPDATE "pregunta_frecuente" SET "respuesta" = 'Sí. Para otro día, todos los sabores que quieras. Para hoy, entre los sabores que tenemos ese día.' WHERE "respuesta" = 'Sí, si pedís con 24 horas o más de anticipación. Para el mismo día tenemos paquetes de 25 de un solo sabor.';--> statement-breakpoint
+UPDATE "pregunta_frecuente" SET "respuesta" = 'Agendamos con un mínimo de 24 horas. Para hoy, elegí en la web entre los sabores que tenemos ese día.' WHERE "respuesta" = 'Agendamos con un mínimo de 24 horas. Para hoy, consultá los paquetes disponibles.';--> statement-breakpoint
+UPDATE "condicion" SET "texto" = 'Pedidos del día: elegís entre los sabores disponibles ese día.' WHERE "texto" = 'Pedidos del día: paquetes de 25 de un solo sabor según disponibilidad.';--> statement-breakpoint
+INSERT INTO "condicion" ("titulo", "texto", "orden") SELECT '', 'Retiros y envíos de lunes a sábado, de 10 a 18 h. Los domingos no hay entregas.', COALESCE(MAX("orden"), 0) + 1 FROM "condicion" WHERE NOT EXISTS (SELECT 1 FROM "condicion" WHERE "texto" LIKE 'Retiros y envíos de lunes a sábado%');--> statement-breakpoint
+UPDATE "ajustes" SET "valor" = '"Lunes a sábado, de 10 a 18 h"'::jsonb WHERE "clave" = 'horarios' AND "valor" = '"Lunes a sábado, de 10 a 17 h"'::jsonb;--> statement-breakpoint
+UPDATE "ajustes" SET "valor" = "valor" || '{"hora_desde": 10, "hora_hasta": 18}'::jsonb WHERE "clave" = 'pedidos' AND NOT ("valor" ? 'hora_desde');

@@ -40,13 +40,13 @@ export function plantillaRecuperar(url: string) {
 
 export type DatosPedidoNuevo = {
   codigo: string; modalidad: "hoy" | "otro_dia"; lineas: { tipo: string; sabor: string; cantidad: number }[];
-  unidades: number; total: number; sena: number; entrega: "retiro" | "bolt"; fechaEntrega: string; nombre: string; factura: boolean; enlacePanel: string; promo?: string | null;
+  unidades: number; total: number; sena: number; entrega: "retiro" | "bolt"; fechaEntrega: string; hora?: string | null; nombre: string; factura: boolean; enlacePanel: string; promo?: string | null;
 };
 
 export function plantillaPedidoNuevo(d: DatosPedidoNuevo) {
   const detalle = d.lineas.map((l) => `${l.cantidad} ${l.tipo === "xl" ? "XL " : ""}${l.sabor}`);
   const filas: [string, string][] = [
-    ["Para", d.modalidad === "hoy" ? "hoy" : fechaVisible(d.fechaEntrega)],
+    ["Para", (d.modalidad === "hoy" ? "hoy" : fechaVisible(d.fechaEntrega)) + (d.hora ? ` a las ${d.hora} h` : "")],
     ["Cliente", d.nombre],
     ...(d.promo ? ([["Promo", d.promo]] as [string, string][]) : []),
     ["Pedido", detalle.join(", ")],

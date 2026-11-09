@@ -95,6 +95,7 @@ export const pedido = pgTable(
     sena: integer("sena").notNull(),
     entrega: entrega("entrega").notNull(),
     fechaEntrega: date("fecha_entrega").notNull(),
+    hora: text("hora"), // "HH:MM" de retiro o envío; null en pedidos viejos
     nombre: text("nombre").notNull(),
     telefono: text("telefono"),
     factura: jsonb("factura").$type<DatosFactura | null>(),

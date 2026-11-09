@@ -123,7 +123,7 @@
       </div>
       <div class="barra"><input type="search" placeholder="Buscar por cliente, código o sabor" aria-label="Buscar pedidos" value="${esc(busqueda)}" data-buscar>${activos ? `<button type="button" class="btn chico" data-limpiar>Limpiar filtros (${activos})</button>` : ''}</div>
       <div class="tabla tarjetas-movil"><table class="t-pedidos"><thead><tr><th>Código</th><th>Para el día</th><th>Cliente</th><th>Pedido</th><th>Total</th><th>Entrega</th><th>Estado</th><th></th></tr></thead><tbody>
-      ${filas.map((p) => `<tr id="pedido-${p.id}" class="${p.fechaEntrega < hoyISO() ? 'pasado' : ''}"><td data-l="Código" class="nw"><b>${esc(p.codigo)}</b></td><td data-l="Para el día"><b>${cap(diaTxt(p.fechaEntrega))}</b></td><td data-l="Cliente" class="full"><b>${esc(p.nombre)}</b></td><td data-l="Pedido" class="full">${esc(lineasTexto(p.detalle))}<br><small>${p.modalidad === 'hoy' ? 'Para hoy' : 'Para otro día'}${p.promo ? ` · <b>Promo: ${esc(p.promo.titulo)}</b>` : ''}</small></td><td class="num" data-l="Total">${gs(p.total)}</td><td data-l="Entrega">${p.entrega === 'bolt' ? 'Bolt' : 'Retiro'}${p.factura ? '<br><small><b>Con factura</b></small>' : ''}</td>
+      ${filas.map((p) => `<tr id="pedido-${p.id}" class="${p.fechaEntrega < hoyISO() ? 'pasado' : ''}"><td data-l="Código" class="nw"><b>${esc(p.codigo)}</b></td><td data-l="Para el día"><b>${cap(diaTxt(p.fechaEntrega))}</b>${p.hora ? `<br><small>${esc(p.hora)} h</small>` : ''}</td><td data-l="Cliente" class="full"><b>${esc(p.nombre)}</b></td><td data-l="Pedido" class="full">${esc(lineasTexto(p.detalle))}<br><small>${p.modalidad === 'hoy' ? 'Para hoy' : 'Para otro día'}${p.promo ? ` · <b>Promo: ${esc(p.promo.titulo)}</b>` : ''}</small></td><td class="num" data-l="Total">${gs(p.total)}</td><td data-l="Entrega">${p.entrega === 'bolt' ? 'Bolt' : 'Retiro'}${p.factura ? '<br><small><b>Con factura</b></small>' : ''}</td>
       <td data-l="Estado" class="full"><select class="inline" data-estado-pedido="${p.id}" aria-label="Estado de ${esc(p.codigo)}">${ESTADOS_PEDIDO.map(([e, t]) => `<option value="${e}" ${e === p.estado ? 'selected' : ''}>${t}</option>`).join('')}</select></td>
       <td class="full"><div class="acciones"><button class="btn chico pri" data-ver-pedido="${p.id}">Ver</button></div></td></tr>`).join('')}
       </tbody></table>${filas.length ? '' : `<div class="vacio">${todos ? 'No hay pedidos con estos filtros. <button type="button" class="btn chico" data-limpiar>Ver todos</button>' : 'Todavía no entró ningún pedido por la web.'}</div>`}</div>${total > 10 ? pag : ''}`;
@@ -183,7 +183,9 @@
       <div class="bloque"><h3>Avisos de pedidos</h3>${campo('email', 'Email que recibe los avisos', a.email, 'email', 'Te llega un aviso cada vez que alguien arma un pedido en la web.')}<div><button class="btn chico" type="button" data-accion="prueba">Enviar email de prueba</button></div></div>
       <div class="bloque"><h3>Contacto y redes</h3>${campo('whatsapp', 'WhatsApp', a.whatsapp, 'tel', 'Celular al que llegan los pedidos, por ejemplo 0986 759 890.')}${campo('instagram', 'Instagram (link completo)', a.instagram, 'url')}${campo('tiktok', 'TikTok (link completo)', a.tiktok, 'url')}</div>
       <div class="bloque"><h3>Local y horario</h3>${campo('horario', 'Horario', a.horario)}${campo('mapa', 'Link de Google Maps', a.mapa, 'url')}</div>
-      <div class="bloque"><h3>Pedidos</h3>${campo('sena', 'Seña (%)', a.sena, 'number', 'Se calcula en todos los pedidos y se redondea a G. 1.000.', 'min="0" max="100"')}</div>
+      <div class="bloque"><h3>Pedidos</h3>${campo('sena', 'Seña (%)', a.sena, 'number', 'Se calcula en todos los pedidos y se redondea a G. 1.000.', 'min="0" max="100"')}
+        <div class="dos">${campo('horaDesde', 'Retiro y envíos desde (hora)', a.horaDesde, 'number', 'Por ejemplo 10.', 'min="0" max="23" step="1"')}${campo('horaHasta', 'Hasta (hora)', a.horaHasta, 'number', 'Por ejemplo 18.', 'min="1" max="24" step="1"')}</div>
+        <small>El cliente elige la hora cada 30 minutos dentro de este horario, de lunes a sábado. Los domingos no se puede elegir.</small></div>
       <div class="bloque"><h3>Datos de pago</h3>${campo('pago', 'Datos de transferencia', a.pago, 'textarea', 'Privado. No se publican en la web: solo para copiar y pegar en el chat de WhatsApp.')}<div><button class="btn chico" type="button" data-accion="copiar-pago">Copiar datos</button></div></div>
       <button class="btn pri" type="submit">Guardar ajustes</button></form>
       <div class="bloque" style="margin-top:22px"><h3>Tu contraseña</h3><p style="margin:0">Entrás como <b>${esc(db.usuario?.email)}</b>.</p><div><button class="btn chico" type="button" data-accion="cambiar-clave">Cambiar contraseña</button></div></div>`;
@@ -288,7 +290,7 @@
     lado('Pedido ' + p.codigo,
       `<div class="previa detalle-pedido"><b>${esc(p.nombre)}</b>${p.promo ? `<span class="chip vigente">Promo: ${esc(p.promo.titulo)}</span>` : ''}
         <span>${p.detalle.map((l) => `${l.cantidad} ${l.tipo === 'xl' ? 'XL' : 'heladitos'} de ${esc(l.sabor)}`).join('<br>')}</span>
-        <span>${p.modalidad === 'hoy' ? 'Para hoy' : 'Para otro día'}: <b>${cap(diaTxt(p.fechaEntrega))}</b> (${fecha(p.fechaEntrega)}) · ${p.entrega === 'bolt' ? 'Bolt Envíos' : 'Retiro en Reducto'}</span>
+        <span>${p.modalidad === 'hoy' ? 'Para hoy' : 'Para otro día'}: <b>${cap(diaTxt(p.fechaEntrega))}</b> (${fecha(p.fechaEntrega)})${p.hora ? ` a las <b>${esc(p.hora)} h</b>` : ''} · ${p.entrega === 'bolt' ? 'Bolt Envíos' : 'Retiro en Reducto'}</span>
         ${p.unidadesGourmet ? `<span>${p.unidadesGourmet} heladitos a ${gs(p.precioGourmet)}</span>` : ''}${p.unidadesXl ? `<span>${p.unidadesXl} XL a ${gs(p.precioXl)}</span>` : ''}
         <span>Total <b>${gs(p.total)}</b> · Seña <b>${gs(p.sena)}</b></span>
         ${fac ? `<span><b>Factura electrónica:</b><br>${esc(fac.nombre_apellido)} · RUC ${esc(fac.ruc)} · ${esc(fac.correo)}</span>` : ''}
@@ -389,7 +391,7 @@
     if (e.target.id !== 'form-ajustes') return;
     e.preventDefault();
     const f = new FormData(e.target), g = (k) => String(f.get(k) || '').trim();
-    await hacer({ accion: 'ajustes', email: g('email'), whatsapp: g('whatsapp'), instagram: g('instagram'), tiktok: g('tiktok'), horario: g('horario'), mapa: g('mapa'), sena: Math.round(+g('sena') || 0), pago: String(f.get('pago') || '') });
+    await hacer({ accion: 'ajustes', email: g('email'), whatsapp: g('whatsapp'), instagram: g('instagram'), tiktok: g('tiktok'), horario: g('horario'), mapa: g('mapa'), sena: Math.round(+g('sena') || 0), pago: String(f.get('pago') || ''), horaDesde: g('horaDesde') ? Math.round(+g('horaDesde')) : undefined, horaHasta: g('horaHasta') ? Math.round(+g('horaHasta')) : undefined });
   });
   addEventListener('keydown', (e) => { if (e.key === 'Escape') { cerrarLado(); cerrarMenu(); $('.confirmar')?.remove(); } });
 

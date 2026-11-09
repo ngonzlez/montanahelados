@@ -15,6 +15,13 @@
       "when": 1792608890259,
       "tag": "0001_promo_armable",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794225353446,
+      "tag": "0002_horario_entrega",
+      "breakpoints": true
     }
   ]
 }

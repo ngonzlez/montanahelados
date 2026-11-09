@@ -34,7 +34,7 @@ export default async function Inicio() {
   const ig = a.instagram as Red | undefined;
   const tt = a.tiktok as Red | undefined;
   const ubic = a.ubicacion as { texto: string; google_maps: string } | undefined;
-  const reglas = (a.pedidos ?? {}) as { sena_porcentaje?: number; paquete_unidades?: number; paso_anticipado?: number; atajos_gourmet?: number[]; atajos_xl?: number[] };
+  const reglas = (a.pedidos ?? {}) as { sena_porcentaje?: number; paquete_unidades?: number; paso_anticipado?: number; atajos_gourmet?: number[]; atajos_xl?: number[]; hora_desde?: number; hora_hasta?: number };
   const paquete = reglas.paquete_unidades ?? 25;
   const sena = reglas.sena_porcentaje ?? 50;
   const t = textosFinales(a.textos_web, { paquete, sena });
@@ -225,6 +225,9 @@ export default async function Inicio() {
               escalones={d.escalones}
               senaPorcentaje={sena}
               paquete={paquete}
+              horaDesde={reglas.hora_desde ?? 10}
+              horaHasta={reglas.hora_hasta ?? 18}
+              diasMax={90}
               pasoAnticipado={reglas.paso_anticipado ?? 5}
               atajosGourmet={reglas.atajos_gourmet ?? [25, 50]}
               atajosXl={reglas.atajos_xl ?? [5, 30]}

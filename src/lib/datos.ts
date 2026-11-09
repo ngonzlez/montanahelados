@@ -8,7 +8,7 @@ import type { ItemCatalogo } from "./pedido";
 
 export type Ajustes = {
   whatsapp?: { valor: string; mostrar: string; link: string };
-  pedidos?: { sena_porcentaje: number; anticipacion_horas: number; paquete_unidades: number; paso_anticipado: number };
+  pedidos?: { sena_porcentaje: number; anticipacion_horas: number; paquete_unidades: number; paso_anticipado: number; hora_desde?: number; hora_hasta?: number };
   email_avisos?: string;
   [clave: string]: unknown;
 };

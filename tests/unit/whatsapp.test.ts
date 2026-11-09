@@ -12,14 +12,15 @@ describe("mensaje de WhatsApp", () => {
   ];
   const m = mensajePedido({
     modalidad: "otro_dia", lineas, calculo: calcularPedido(lineas, esc, 50), senaPorcentaje: 50,
-    entrega: "bolt", fechaEntrega: "2026-10-22", nombre: "Ana", codigo: "MH-0007",
+    entrega: "bolt", fechaEntrega: "2026-10-22", hora: "16:30", nombre: "Ana", codigo: "MH-0007",
     factura: { nombre_apellido: "Ana Pérez", ruc: "", correo: "ana@ejemplo.com" },
   });
   it("tiene totales, seña, fecha y código", () => {
     expect(m).toContain("Total: 50 heladitos a G. 2.500 c/u = G. 125.000");
     expect(m).toContain("Seña 50 %: G. 63.000");
-    expect(m).toContain("Para el día: 22/10/2026");
+    expect(m).toContain("Para el día: jueves 22/10/2026");
     expect(m).toContain("Entrega: Bolt Envíos");
+    expect(m).toContain("Hora de envío: 16:30 h");
     expect(m).toContain("Código: MH-0007");
     expect(m).toContain("RUC: (completar)");
   });

@@ -15,21 +15,21 @@ const cat: ItemCatalogo[] = [
   { tipo: "xl", slug: "oreo", nombre: "Oreo", estado: "disponible" },
 ];
 const ahora = new Date("2026-10-20T15:00:00Z");
-const base = (p: Partial<PedidoEntrada>): PedidoEntrada => ({ modalidad: "otro_dia", lineas: [], entrega: "retiro", fechaEntrega: "2026-10-21", nombre: "Kiosco", ...p });
+const base = (p: Partial<PedidoEntrada>): PedidoEntrada => ({ modalidad: "otro_dia", lineas: [], entrega: "retiro", fechaEntrega: "2026-10-21", hora: "15:00", nombre: "Kiosco", ...p });
 const promo = { titulo: "100 heladitos", minimo: 100, sabores: null as string[] | null };
 
 describe("promo armada en la web", () => {
   it("pide el mínimo de heladitos (los XL no cuentan)", () => {
-    const r = validarPedido(base({ lineas: [{ tipo: "gourmet", slug: "frutilla", cantidad: 75 }, { tipo: "xl", slug: "oreo", cantidad: 30 }] }), cat, { paquete: 25, ahora, promo });
+    const r = validarPedido(base({ lineas: [{ tipo: "gourmet", slug: "frutilla", cantidad: 75 }, { tipo: "xl", slug: "oreo", cantidad: 30 }] }), cat, { ahora, promo });
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.errores[0]).toContain("Te faltan 25");
   });
   it("acepta el mínimo o más, mezclando sabores y sumando XL", () => {
-    const r = validarPedido(base({ lineas: [{ tipo: "gourmet", slug: "frutilla", cantidad: 60 }, { tipo: "gourmet", slug: "uva", cantidad: 65 }, { tipo: "xl", slug: "oreo", cantidad: 5 }] }), cat, { paquete: 25, ahora, promo });
+    const r = validarPedido(base({ lineas: [{ tipo: "gourmet", slug: "frutilla", cantidad: 60 }, { tipo: "gourmet", slug: "uva", cantidad: 65 }, { tipo: "xl", slug: "oreo", cantidad: 5 }] }), cat, { ahora, promo });
     expect(r.ok).toBe(true);
   });
   it("solo deja los sabores de la promo si la dueña eligió algunos", () => {
-    const r = validarPedido(base({ lineas: [{ tipo: "gourmet", slug: "frutilla", cantidad: 50 }, { tipo: "gourmet", slug: "uva", cantidad: 50 }] }), cat, { paquete: 25, ahora, promo: { ...promo, sabores: ["frutilla", "chocolate"] } });
+    const r = validarPedido(base({ lineas: [{ tipo: "gourmet", slug: "frutilla", cantidad: 50 }, { tipo: "gourmet", slug: "uva", cantidad: 50 }] }), cat, { ahora, promo: { ...promo, sabores: ["frutilla", "chocolate"] } });
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.errores.join(" ")).toContain("Uva no entra");
   });

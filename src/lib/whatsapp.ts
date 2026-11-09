@@ -2,6 +2,7 @@
 // Regla: nunca decir que el mensaje se envió; solo se abre el chat.
 
 import { gs, fechaVisible } from "./formato";
+import { nombreDia } from "./fechas";
 import type { Linea, ResultadoPedido } from "./precios";
 import type { DatosFactura } from "@/db/schema";
 
@@ -18,6 +19,7 @@ export type DatosMensaje = {
   senaPorcentaje: number;
   entrega: "retiro" | "bolt";
   fechaEntrega: string; // ISO
+  hora?: string; // HH:MM
   nombre: string;
   codigo?: string;
   factura?: Partial<DatosFactura> | null;
@@ -35,7 +37,7 @@ export function mensajePedido(d: DatosMensaje): string {
     ? [`¡Hola, Montana Helados! Quiero la promo "${d.promo.titulo}" ${hoy ? "para hoy" : "para otro día"}:`, ""]
     : [`¡Hola, Montana Helados! Quiero hacer un pedido ${hoy ? "para hoy" : "para otro día"}:`, ""];
   if (g.length) {
-    r.push(hoy ? "Heladitos (paquetes de 25):" : "Heladitos:");
+    r.push("Heladitos:");
     for (const l of g) r.push(`- ${l.sabor}: ${l.cantidad}`);
     r.push(`Total: ${c.unidadesGourmet} heladitos a ${gs(c.precioGourmet)} c/u = ${gs(c.subtotalGourmet)}`, "");
   }
@@ -46,7 +48,8 @@ export function mensajePedido(d: DatosMensaje): string {
   }
   r.push(`Total estimado: ${gs(c.total)}`, `Seña ${d.senaPorcentaje} %: ${gs(c.sena)}`, "");
   r.push(`Entrega: ${d.entrega === "retiro" ? "Retiro en Reducto (llevo conservadora)" : "Bolt Envíos"}`);
-  r.push(`Para el día: ${hoy ? "hoy" : fechaVisible(d.fechaEntrega)}`);
+  r.push(`Para el día: ${hoy ? "hoy" : `${nombreDia(d.fechaEntrega)} ${fechaVisible(d.fechaEntrega)}`}`);
+  r.push(`${d.entrega === "retiro" ? "Hora de retiro" : "Hora de envío"}: ${d.hora ? `${d.hora} h` : "(completar)"}`);
   r.push(`Nombre: ${d.nombre.trim()}`);
   if (d.codigo) r.push(`Código: ${d.codigo}`);
   if (d.factura) {

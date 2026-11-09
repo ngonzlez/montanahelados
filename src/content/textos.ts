@@ -40,7 +40,7 @@ export const GRUPOS_TEXTOS: Grupo[] = [
     l("paso1_titulo", "Paso 1: título", "Escribinos", 50),
     p("paso1_texto", "Paso 1: texto", "Armá tu pedido acá arriba, o mandanos un WhatsApp con los sabores y cuántos querés.", 240),
     l("paso2_titulo", "Paso 2: título", "¿Para hoy o para otro día?", 50),
-    p("paso2_texto", "Paso 2: texto", (c) => `Para hoy: paquetes de ${c.paquete} de un solo sabor y los XL. Para otro día (pedís 1 día antes): elegís los sabores que quieras y la cantidad que quieras.`, 240),
+    p("paso2_texto", "Paso 2: texto", "Para hoy: elegís los sabores que tenemos hoy. Para otro día (pedís 1 día antes): todos los sabores. En los dos, la cantidad que quieras y el horario de lunes a sábado.", 240),
     l("paso3_titulo", "Paso 3: título", (c) => `Seña del ${c.sena} %`, 50),
     p("paso3_texto", "Paso 3: texto", (c) => `Pagás ${c.sena === 50 ? "la mitad" : `el ${c.sena} %`} y tu pedido queda anotado. El resto lo pagás por transferencia antes de que salga el pedido. Si cancelás, la seña no se devuelve.`, 240),
     l("paso4_titulo", "Paso 4: título", "Pasás a buscar o te lo mandamos", 50),
@@ -54,7 +54,7 @@ export const GRUPOS_TEXTOS: Grupo[] = [
     l("reventa_etiqueta", "Etiqueta chica", "Para kioscos y almacenes", 40),
     l("reventa_titulo", "Título", (c) => `Reventa por paquete de ${c.paquete}`, 50),
     p("reventa_texto", "Texto", "Cuantos más heladitos llevás, menos pagás por cada uno.", 200),
-    p("reventa_nota", "Nota debajo de los precios", (c) => `**Para hoy:** paquetes de ${c.paquete} de un solo sabor, según lo que haya. **Para otro día:** elegís los sabores que quieras y los mezclamos.`, 260),
+    p("reventa_nota", "Nota debajo de los precios", "**Para hoy:** elegís entre los sabores que tenemos hoy. **Para otro día:** elegís los sabores que quieras y los mezclamos.", 260),
   ] },
   { id: "puntos", titulo: "Puntos de venta", campos: [
     l("puntos_titulo", "Título", "¿Querés uno solo?", 40),

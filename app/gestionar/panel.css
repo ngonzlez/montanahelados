@@ -110,6 +110,7 @@ select.inline{width:auto}
 .campo label{font-weight:800}
 .campo input,.campo textarea,.campo select{min-height:46px;border:3px solid var(--choco);border-radius:14px;background:var(--vainilla);padding:8px 12px}
 .campo small{color:var(--suave);font-weight:700}
+.dos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .promo-armar{border:3px dashed var(--choco);border-radius:16px;padding:12px 14px;gap:10px;margin:0}
 .promo-armar legend{padding:0 6px}
 .sabores-promo{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px 12px}

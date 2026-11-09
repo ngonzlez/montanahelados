@@ -1,7 +1,7 @@
 // Validación del pedido en el servidor: forma (zod) + reglas de negocio (modelo-datos.json → validaciones).
 
 import { z } from "zod";
-import { esFechaISO, hoyISO, mananaISO, sumarDias } from "./fechas";
+import { aMinutos, esFechaISO, hayEntrega, horariosDisponibles, hoyISO, mananaISO, sumarDias } from "./fechas";
 
 export const MAX_DIAS_ANTICIPACION = 90;
 export const RUC = /^\d{1,8}-\d$/;
@@ -24,6 +24,7 @@ export const pedidoEntrada = z.object({
     .max(40, "El pedido tiene demasiados renglones."),
   entrega: z.enum(["retiro", "bolt"], { error: "Elegí cómo lo recibís." }),
   fechaEntrega: z.string().max(10).optional(),
+  hora: z.string().regex(/^\d{2}:\d{2}$/, "Elegí el horario.").optional(),
   nombre: z.string().trim().min(1, "Escribí tu nombre o el de tu negocio.").max(80, "El nombre es muy largo."),
   factura: z
     .object({
@@ -48,13 +49,13 @@ export type ItemCatalogo = {
 };
 
 export type ResultadoValidacion =
-  | { ok: true; lineas: Linea[]; fechaEntrega: string }
+  | { ok: true; lineas: Linea[]; fechaEntrega: string; hora: string }
   | { ok: false; errores: string[] };
 
 export function validarPedido(
   e: PedidoEntrada,
   catalogo: ItemCatalogo[],
-  opciones: { paquete: number; ahora?: Date; promo?: { titulo: string; minimo: number; sabores: string[] | null } | null },
+  opciones: { ahora?: Date; horario?: { desde: number; hasta: number }; promo?: { titulo: string; minimo: number; sabores: string[] | null } | null },
 ): ResultadoValidacion {
   const promo = opciones.promo ?? null;
   const errores: string[] = [];
@@ -81,11 +82,7 @@ export function validarPedido(
       errores.push(`${item.nombre} no entra en la promo "${promo.titulo}".`);
       continue;
     }
-    if (e.modalidad === "hoy") {
-      if (item.estado !== "disponible") errores.push(`Hoy no hay ${item.nombre}. Podés pedirlo para otro día.`);
-      if (l.tipo === "gourmet" && l.cantidad % opciones.paquete !== 0)
-        errores.push(`Para hoy, ${item.nombre} va en paquetes de ${opciones.paquete}.`);
-    }
+    if (e.modalidad === "hoy" && item.estado !== "disponible") errores.push(`Hoy no hay ${item.nombre}. Podés pedirlo para otro día.`);
     lineas.push({ tipo: l.tipo, sabor: item.nombre, cantidad: l.cantidad });
   }
   if (!lineas.length && !errores.length) errores.push("Elegí al menos un sabor.");
@@ -100,7 +97,17 @@ export function validarPedido(
     if (!esFechaISO(f)) errores.push("Elegí el día de entrega.");
     else if (f < mananaISO(opciones.ahora)) errores.push("Con anticipación, la entrega es desde mañana.");
     else if (f > sumarDias(hoyISO(opciones.ahora), MAX_DIAS_ANTICIPACION)) errores.push(`Agendamos hasta ${MAX_DIAS_ANTICIPACION} días adelante. Para más, escribinos por WhatsApp.`);
+    else if (!hayEntrega(f)) errores.push("Los domingos no hay entregas. Elegí otro día.");
     else fechaEntrega = f;
-  }
-  return errores.length ? { ok: false, errores } : { ok: true, lineas, fechaEntrega };
+  } else if (!hayEntrega(fechaEntrega)) errores.push("Hoy domingo no hay entregas. Pedí para otro día.");
+
+  // horario: de "desde" a "hasta" cada 30 minutos; para hoy, solo los que faltan
+  const horario = opciones.horario ?? { desde: 10, hasta: 18 };
+  const hora = e.hora ?? "";
+  if (!hora) errores.push("Elegí el horario.");
+  else if (!horariosDisponibles(horario.desde, horario.hasta, false).includes(hora))
+    errores.push(`El horario es de ${horario.desde} a ${horario.hasta} h.`);
+  else if (e.modalidad === "hoy" && !horariosDisponibles(horario.desde, horario.hasta, true, opciones.ahora).includes(hora))
+    errores.push(aMinutos(hora) < horario.hasta * 60 ? "Ese horario ya pasó. Elegí uno más tarde." : "Para hoy ya no llegamos. Pedí para otro día.");
+  return errores.length ? { ok: false, errores } : { ok: true, lineas, fechaEntrega, hora };
 }

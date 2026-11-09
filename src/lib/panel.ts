@@ -44,6 +44,8 @@ export async function leerEstado() {
       horario: a.horarios ?? "",
       mapa: a.ubicacion?.google_maps ?? "",
       sena: a.pedidos?.sena_porcentaje ?? 50,
+      horaDesde: a.pedidos?.hora_desde ?? 10,
+      horaHasta: a.pedidos?.hora_hasta ?? 18,
       pago: a.datos_pago_privado ?? "",
     },
     fotos: fotosParaPanel(a.fotos_web),
@@ -102,7 +104,7 @@ export async function listarPedidos(f: FiltrosPedidos) {
     return c;
   };
   const donde = and(...condiciones(false));
-  const orden = [sql`case when ${s.pedido.fechaEntrega} < ${hoy} then 1 else 0 end`, sql`case when ${s.pedido.fechaEntrega} < ${hoy} then null else ${s.pedido.fechaEntrega} end asc`, desc(s.pedido.fechaEntrega), desc(s.pedido.id)];
+  const orden = [sql`case when ${s.pedido.fechaEntrega} < ${hoy} then 1 else 0 end`, sql`case when ${s.pedido.fechaEntrega} < ${hoy} then null else ${s.pedido.fechaEntrega} end asc`, asc(s.pedido.hora), desc(s.pedido.fechaEntrega), desc(s.pedido.id)];
   const [filas, [{ total }], [{ todos }], cuentas] = await Promise.all([
     db.select().from(s.pedido).where(donde).orderBy(...orden).limit(f.por).offset((f.pagina - 1) * f.por),
     db.select({ total: count() }).from(s.pedido).where(donde),
@@ -117,7 +119,7 @@ export async function listarPedidos(f: FiltrosPedidos) {
     todos,
     cuentas: porEstado,
     filas: filas.map((p) => ({
-      id: p.id, codigo: p.codigo, modalidad: p.modalidad, entrega: p.entrega, fechaEntrega: p.fechaEntrega,
+      id: p.id, codigo: p.codigo, modalidad: p.modalidad, entrega: p.entrega, fechaEntrega: p.fechaEntrega, hora: p.hora,
       nombre: p.nombre, detalle: p.detalle, total: p.total, sena: p.sena, estado: p.estado, notas: p.notas,
       factura: p.factura, promo: p.promo, creado: p.creado, unidadesGourmet: p.unidadesGourmet, precioGourmet: p.precioGourmet, unidadesXl: p.unidadesXl, precioXl: p.precioXl,
     })),
@@ -164,7 +166,9 @@ export const accion = z.discriminatedUnion("accion", [
     whatsapp: z.string().trim().max(20).refine((t) => /^0?9\d{8}$/.test(t.replace(/\D/g, "")), "El WhatsApp tiene que ser un celular, por ejemplo 0986 759 890."),
     instagram: https, tiktok: https, horario: texto(80), mapa: z.union([z.literal(""), mapa]),
     sena: z.number().int().min(0).max(100), pago: texto(600),
-  }),
+    horaDesde: z.number().int().min(0).max(23).optional(),
+    horaHasta: z.number().int().min(1).max(24).optional(),
+  }).refine((a) => a.horaDesde === undefined || a.horaHasta === undefined || a.horaHasta > a.horaDesde, { message: 'La hora "hasta" tiene que ser después de "desde".' }),
   z.object({ accion: z.literal("email_prueba") }),
   z.object({ accion: z.literal("foto_web"), clave: z.string().max(30), ruta: fotoWeb.nullable().optional(), original: z.boolean().optional(), alt: texto(160) }),
   z.object({ accion: z.literal("textos"), valores: z.record(z.string(), z.string().max(400)) }),
@@ -334,7 +338,10 @@ export async function ejecutar(a: Accion, u: Usuario): Promise<Resultado> {
       const [ub] = await db.select().from(s.ajustes).where(eq(s.ajustes.clave, "ubicacion"));
       await guardarAjuste("ubicacion", { ...((ub?.valor ?? {}) as object), google_maps: a.mapa });
       const [pe] = await db.select().from(s.ajustes).where(eq(s.ajustes.clave, "pedidos"));
-      await guardarAjuste("pedidos", { ...((pe?.valor ?? {}) as object), sena_porcentaje: a.sena });
+      await guardarAjuste("pedidos", {
+        ...((pe?.valor ?? {}) as object), sena_porcentaje: a.sena,
+        ...(a.horaDesde !== undefined ? { hora_desde: a.horaDesde } : {}), ...(a.horaHasta !== undefined ? { hora_hasta: a.horaHasta } : {}),
+      });
       await guardarAjuste("email_avisos", a.email);
       await guardarAjuste("datos_pago_privado", a.pago);
       await auditar(u, "ajustes", null, "guardar", null, "ajustes");
