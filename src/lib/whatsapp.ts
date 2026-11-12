@@ -3,6 +3,7 @@
 
 import { gs, fechaVisible } from "./formato";
 import { nombreDia } from "./fechas";
+import { textoReparto } from "./surtido";
 import type { Linea, ResultadoPedido } from "./precios";
 import type { DatosFactura } from "@/db/schema";
 
@@ -24,6 +25,7 @@ export type DatosMensaje = {
   codigo?: string;
   factura?: Partial<DatosFactura> | null;
   promo?: { titulo: string } | null;
+  surtido?: { paquetes: number; unidades: number; precioPaquete: number; sabores: string[] } | null;
 };
 
 const completar = (v?: string) => (v && v.trim() ? v.trim() : "(completar)");
@@ -36,7 +38,12 @@ export function mensajePedido(d: DatosMensaje): string {
   const r: string[] = d.promo
     ? [`¡Hola, Montana Helados! Quiero la promo "${d.promo.titulo}" ${hoy ? "para hoy" : "para otro día"}:`, ""]
     : [`¡Hola, Montana Helados! Quiero hacer un pedido ${hoy ? "para hoy" : "para otro día"}:`, ""];
-  if (g.length) {
+  if (d.surtido) {
+    const su = d.surtido, total = su.paquetes * su.unidades;
+    r.push("Paquetes surtidos:");
+    r.push(`- ${su.paquetes} paquete${su.paquetes > 1 ? "s" : ""} de ${su.unidades} (${total} heladitos) a ${gs(su.precioPaquete)} c/u = ${gs(c.subtotalGourmet)}`);
+    r.push(`Surtidos en ${su.sabores.length} sabores, ${textoReparto(total, su.sabores.length)}: ${su.sabores.join(", ")}`, "");
+  } else if (g.length) {
     r.push("Heladitos:");
     for (const l of g) r.push(`- ${l.sabor}: ${l.cantidad}`);
     r.push(`Total: ${c.unidadesGourmet} heladitos a ${gs(c.precioGourmet)} c/u = ${gs(c.subtotalGourmet)}`, "");

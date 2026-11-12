@@ -34,8 +34,8 @@ export async function leerCatalogo() {
 
 export async function catalogoParaValidar(): Promise<ItemCatalogo[]> {
   const [sabores, xl] = await Promise.all([
-    db.select({ slug: s.sabor.slug, nombre: s.sabor.nombre, estado: s.sabor.estado }).from(s.sabor).where(isNull(s.sabor.eliminadoEn)),
-    db.select({ slug: s.heladoXl.slug, nombre: s.heladoXl.nombre, estado: s.heladoXl.estado }).from(s.heladoXl).where(isNull(s.heladoXl.eliminadoEn)),
+    db.select({ slug: s.sabor.slug, nombre: s.sabor.nombre, estado: s.sabor.estado }).from(s.sabor).where(isNull(s.sabor.eliminadoEn)).orderBy(asc(s.sabor.orden), asc(s.sabor.id)),
+    db.select({ slug: s.heladoXl.slug, nombre: s.heladoXl.nombre, estado: s.heladoXl.estado }).from(s.heladoXl).where(isNull(s.heladoXl.eliminadoEn)).orderBy(asc(s.heladoXl.orden), asc(s.heladoXl.id)),
   ]);
   return [...sabores.map((x) => ({ ...x, tipo: "gourmet" as const })), ...xl.map((x) => ({ ...x, tipo: "xl" as const }))];
 }
@@ -55,5 +55,9 @@ export function promoVigenteDonde(hoy: string) {
 export async function promoParaPedido(id: number) {
   const [p] = await db.select().from(s.promo).where(and(eq(s.promo.id, id), promoVigenteDonde(hoyISO())));
   if (!p || !p.minimo) return null;
-  return { id: p.id, titulo: p.titulo, minimo: p.minimo, precioUnidad: p.precioUnidad, sabores: p.sabores?.length ? p.sabores : null };
+  if (p.surtido && !p.precioPaquete) return null;
+  return {
+    id: p.id, titulo: p.titulo, minimo: p.minimo, precioUnidad: p.surtido ? null : p.precioUnidad,
+    sabores: !p.surtido && p.sabores?.length ? p.sabores : null, surtido: p.surtido, precioPaquete: p.precioPaquete,
+  };
 }

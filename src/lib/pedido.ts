@@ -35,6 +35,7 @@ export const pedidoEntrada = z.object({
     .nullable()
     .optional(),
   promoId: z.number().int().positive().optional(),
+  paquetesSurtido: z.number().int("Los paquetes van sin decimales.").min(1, "Elegí cuántos paquetes querés.").max(50, "Para más de 50 paquetes escribinos por WhatsApp.").optional(),
   // honeypot: campo invisible para personas; si viene con algo, es un robot
   sitio_web: z.string().max(200).optional(),
 });
@@ -55,7 +56,7 @@ export type ResultadoValidacion =
 export function validarPedido(
   e: PedidoEntrada,
   catalogo: ItemCatalogo[],
-  opciones: { ahora?: Date; horario?: { desde: number; hasta: number }; promo?: { titulo: string; minimo: number; sabores: string[] | null } | null },
+  opciones: { ahora?: Date; horario?: { desde: number; hasta: number }; promo?: { titulo: string; minimo: number; sabores: string[] | null; surtido?: boolean } | null },
 ): ResultadoValidacion {
   const promo = opciones.promo ?? null;
   const errores: string[] = [];
@@ -78,6 +79,10 @@ export function validarPedido(
       errores.push(`${item.nombre} está agotado.`);
       continue;
     }
+    if (promo?.surtido && l.tipo === "gourmet") {
+      errores.push(`En la promo "${promo.titulo}" los sabores van surtidos: no se eligen aparte.`);
+      continue;
+    }
     if (promo?.sabores && l.tipo === "gourmet" && !promo.sabores.includes(l.slug)) {
       errores.push(`${item.nombre} no entra en la promo "${promo.titulo}".`);
       continue;
@@ -85,8 +90,11 @@ export function validarPedido(
     if (e.modalidad === "hoy" && item.estado !== "disponible") errores.push(`Hoy no hay ${item.nombre}. Podés pedirlo para otro día.`);
     lineas.push({ tipo: l.tipo, sabor: item.nombre, cantidad: l.cantidad });
   }
-  if (!lineas.length && !errores.length) errores.push("Elegí al menos un sabor.");
-  if (promo && !errores.length) {
+  if (promo?.surtido) {
+    if (!e.paquetesSurtido) errores.push("Elegí cuántos paquetes surtidos querés.");
+    else if (!saboresParaSurtido(catalogo, e.modalidad).length) errores.push("Hoy no tenemos sabores para armar el surtido. Pedí para otro día.");
+  } else if (!lineas.length && !errores.length) errores.push("Elegí al menos un sabor.");
+  if (promo && !promo.surtido && !errores.length) {
     const g = lineas.filter((l) => l.tipo === "gourmet").reduce((a, l) => a + l.cantidad, 0);
     if (g < promo.minimo) errores.push(`La promo "${promo.titulo}" es desde ${promo.minimo} heladitos. Te faltan ${promo.minimo - g}.`);
   }
@@ -110,4 +118,11 @@ export function validarPedido(
   else if (e.modalidad === "hoy" && !horariosDisponibles(horario.desde, horario.hasta, true, opciones.ahora).includes(hora))
     errores.push(aMinutos(hora) < horario.hasta * 60 ? "Ese horario ya pasó. Elegí uno más tarde." : "Para hoy ya no llegamos. Pedí para otro día.");
   return errores.length ? { ok: false, errores } : { ok: true, lineas, fechaEntrega, hora };
+}
+
+/** Sabores que entran en un paquete surtido: para hoy, los "Disponible"; para otro día, también "Hoy no hay". */
+export function saboresParaSurtido(catalogo: ItemCatalogo[], modalidad: "hoy" | "otro_dia"): string[] {
+  return catalogo
+    .filter((c) => c.tipo === "gourmet" && (c.estado === "disponible" || (modalidad === "otro_dia" && c.estado === "hoy_no_hay")))
+    .map((c) => c.nombre);
 }

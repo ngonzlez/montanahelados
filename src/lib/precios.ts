@@ -37,12 +37,26 @@ export function calcularSena(total: number, porcentaje: number): number {
 }
 
 /** Precio de promo por heladito: se usa si es mejor que el de la escala; nunca cobra más que sin promo. */
-export type OpcionesCalculo = { precioPromoGourmet?: number | null };
+export type OpcionesCalculo = {
+  precioPromoGourmet?: number | null;
+  /** Paquetes surtidos: precio fijo por paquete; los heladitos de las líneas no se cobran aparte. */
+  surtido?: { paquetes: number; unidades: number; precioPaquete: number } | null;
+};
 
 export function calcularPedido(lineas: Linea[], escalones: Escalon[], senaPorcentaje: number, op: OpcionesCalculo = {}): ResultadoPedido {
   const suma = (t: Producto) => lineas.filter((l) => l.tipo === t).reduce((a, l) => a + l.cantidad, 0);
   const unidadesGourmet = suma("gourmet");
   const unidadesXl = suma("xl");
+  if (op.surtido) {
+    const u = op.surtido.paquetes * op.surtido.unidades;
+    const subG = op.surtido.paquetes * op.surtido.precioPaquete;
+    const precioXl = precioUnitario(escalones, "xl", unidadesXl);
+    const total = subG + unidadesXl * precioXl;
+    return {
+      unidadesGourmet: u, precioGourmet: u ? Math.round(subG / u) : 0, subtotalGourmet: subG,
+      unidadesXl, precioXl, subtotalXl: unidadesXl * precioXl, total, sena: calcularSena(total, senaPorcentaje),
+    };
+  }
   const escala = precioUnitario(escalones, "gourmet", unidadesGourmet);
   const precioGourmet = op.precioPromoGourmet ? Math.min(escala, op.precioPromoGourmet) : escala;
   const precioXl = precioUnitario(escalones, "xl", unidadesXl);

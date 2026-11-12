@@ -159,7 +159,7 @@ export default async function Inicio() {
                         <h3>{pr.titulo}</h3>
                         {pr.detalle ? <p>{pr.detalle}</p> : null}
                         <div className="promo-acciones">
-                          {pr.minimo ? (
+                          {pr.minimo && (!pr.surtido || pr.precioPaquete) ? (
                             // Promo que se arma en la web: lleva al armador con la promo puesta
                             <a className="boton" href="#arma" data-armar-promo={pr.id}><Icono n="mensaje" />Pedir esta promo</a>
                           ) : (
@@ -231,7 +231,7 @@ export default async function Inicio() {
               pasoAnticipado={reglas.paso_anticipado ?? 5}
               atajosGourmet={reglas.atajos_gourmet ?? [25, 50]}
               atajosXl={reglas.atajos_xl ?? [5, 30]}
-              promos={d.promos.filter((pr) => pr.minimo).map((pr) => ({ id: pr.id, titulo: pr.titulo, minimo: pr.minimo!, precioUnidad: pr.precioUnidad, sabores: pr.sabores?.length ? pr.sabores : null }))}
+              promos={d.promos.filter((pr) => pr.minimo && (!pr.surtido || pr.precioPaquete)).map((pr) => ({ id: pr.id, titulo: pr.titulo, minimo: pr.minimo!, precioUnidad: pr.precioUnidad, sabores: pr.sabores?.length && !pr.surtido ? pr.sabores : null, surtido: pr.surtido && !!pr.precioPaquete, precioPaquete: pr.precioPaquete }))}
             />
           </div>
         </section>

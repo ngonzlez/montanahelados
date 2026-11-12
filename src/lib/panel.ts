@@ -34,7 +34,7 @@ export async function leerEstado() {
     sabores: sabores.map((x) => ({ ...x, eliminadoEn: undefined })),
     xl: xl.map((x) => ({ ...x, eliminadoEn: undefined })),
     precios,
-    promos: promos.map((p) => ({ id: p.id, titulo: p.titulo, detalle: p.detalle, foto: p.foto, desde: p.desde ?? "", hasta: p.hasta ?? "", terminada: !!p.terminadaEn, visible: p.visible, minimo: p.minimo, precioUnidad: p.precioUnidad, sabores: p.sabores ?? [] })),
+    promos: promos.map((p) => ({ id: p.id, titulo: p.titulo, detalle: p.detalle, foto: p.foto, desde: p.desde ?? "", hasta: p.hasta ?? "", terminada: !!p.terminadaEn, visible: p.visible, minimo: p.minimo, precioUnidad: p.precioUnidad, sabores: p.sabores ?? [], surtido: p.surtido, precioPaquete: p.precioPaquete })),
     puntos: puntos.map((p) => ({ id: p.id, nombre: p.nombre, barrio: p.barrio ?? "", mapa: p.linkMapa, visible: p.visible })),
     ajustes: {
       email: a.email_avisos ?? "",
@@ -153,6 +153,9 @@ export const accion = z.discriminatedUnion("accion", [
     minimo: z.number().int("El mínimo va sin decimales.").min(1, "El mínimo tiene que ser 1 o más.").max(5000).nullable().optional(),
     precioUnidad: z.number().int("El precio va sin decimales.").min(1, "El precio tiene que ser mayor a 0.").max(10_000_000).nullable().optional(),
     sabores: z.array(z.string().min(1).max(60)).max(100).optional(),
+    // tipo de promo armable: el cliente elige sabores, o paquete surtido con precio por paquete
+    surtido: z.boolean().optional(),
+    precioPaquete: z.number().int("El precio va sin decimales.").min(1, "El precio del paquete tiene que ser mayor a 0.").max(100_000_000).nullable().optional(),
   }),
   z.object({ accion: z.literal("terminar_promo"), id }),
   z.object({ accion: z.literal("duplicar_promo"), id }),
@@ -272,9 +275,13 @@ export async function ejecutar(a: Accion, u: Usuario): Promise<Resultado> {
     case "guardar_promo": {
       if (a.desde && a.hasta && a.hasta < a.desde) return { ok: false, error: 'La fecha "hasta" no puede ser antes de "desde".' };
       if (a.precioUnidad && !a.minimo) return { ok: false, error: "Para poner precio de promo, poné también el mínimo de heladitos." };
+      if (a.surtido && !a.minimo) return { ok: false, error: "Poné cuántos heladitos trae el paquete surtido." };
+      if (a.surtido && !a.precioPaquete) return { ok: false, error: "Poné el precio del paquete surtido." };
       const valores = {
         titulo: a.titulo, detalle: a.detalle, textoWhatsapp: a.titulo, desde: a.desde || null, hasta: a.hasta || null,
-        minimo: a.minimo ?? null, precioUnidad: a.minimo ? (a.precioUnidad ?? null) : null, sabores: a.minimo && a.sabores?.length ? a.sabores : null,
+        minimo: a.minimo ?? null, surtido: !!(a.minimo && a.surtido),
+        precioUnidad: a.minimo && !a.surtido ? (a.precioUnidad ?? null) : null, sabores: a.minimo && !a.surtido && a.sabores?.length ? a.sabores : null,
+        precioPaquete: a.minimo && a.surtido ? (a.precioPaquete ?? null) : null,
       };
       if (a.id) {
         await db.update(s.promo).set({ ...valores, ...(a.foto ? { foto: a.foto } : {}) }).where(eq(s.promo.id, a.id));
@@ -293,7 +300,7 @@ export async function ejecutar(a: Accion, u: Usuario): Promise<Resultado> {
     case "duplicar_promo": {
       const [p] = await db.select().from(s.promo).where(eq(s.promo.id, a.id));
       if (!p) return { ok: false, error: "Esa promo ya no existe." };
-      await db.insert(s.promo).values({ titulo: `${p.titulo} (copia)`, detalle: p.detalle, foto: p.foto, textoWhatsapp: p.textoWhatsapp, desde: hoyISO(), hasta: null, visible: p.visible, orden: p.orden, minimo: p.minimo, precioUnidad: p.precioUnidad, sabores: p.sabores });
+      await db.insert(s.promo).values({ titulo: `${p.titulo} (copia)`, detalle: p.detalle, foto: p.foto, textoWhatsapp: p.textoWhatsapp, desde: hoyISO(), hasta: null, visible: p.visible, orden: p.orden, minimo: p.minimo, precioUnidad: p.precioUnidad, sabores: p.sabores, surtido: p.surtido, precioPaquete: p.precioPaquete });
       return { ok: true, aviso: "Promo duplicada" };
     }
     case "guardar_punto": {

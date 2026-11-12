@@ -5,12 +5,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { calcularPedido, type Escalon, type Linea } from "@/lib/precios";
 import { mensajePedido, AVISO_ABIERTO } from "@/lib/whatsapp";
 import { gs } from "@/lib/formato";
+import { textoReparto } from "@/lib/surtido";
 import { diasDeEntrega, hayEntrega, horariosDisponibles, hoyISO, nombreDia, sumarDias } from "@/lib/fechas";
 import arte from "@/content/arte.json";
 
 type Estado = "disponible" | "hoy_no_hay" | "agotado" | "oculto";
 export type ItemArmador = { slug: string; nombre: string; detalle?: string; foto: string | null; estado: Estado };
-export type PromoArmador = { id: number; titulo: string; minimo: number; precioUnidad: number | null; sabores: string[] | null };
+export type PromoArmador = { id: number; titulo: string; minimo: number; precioUnidad: number | null; sabores: string[] | null; surtido: boolean; precioPaquete: number | null };
 
 type Props = {
   sabores: ItemArmador[];
@@ -53,6 +54,7 @@ export default function Armador(p: Props) {
   // días y horarios se calculan en el navegador (dependen de la hora actual); se renuevan cada minuto
   const [ahora, setAhora] = useState<Date | null>(null);
   const [promoId, setPromoId] = useState<number | null>(null);
+  const [paquetes, setPaquetes] = useState(1);
   const promo = p.promos.find((x) => x.id === promoId) ?? null;
   const modoRef = useRef(modo);
   modoRef.current = modo;
@@ -91,6 +93,7 @@ export default function Armador(p: Props) {
       if (!it) return;
       if (!sePuede(it, modoRef.current)) return avisar(`Hoy no hay ${it.nombre}. Probá con "Para otro día".`);
       const pr = promoRef.current;
+      if (pr?.surtido) return avisar("En el paquete surtido los sabores van surtidos. Quitá la promo para elegir sabores.");
       if (pr?.sabores && !pr.sabores.includes(slug)) return avisar(`${it.nombre} no entra en la promo. Quitá la promo para pedirlo.`);
       sumar("g", slug, p.paquete);
       avisar(`Sumaste ${p.paquete} de ${it.nombre} a tu pedido`);
@@ -107,6 +110,13 @@ export default function Armador(p: Props) {
       if (!pr) return;
       setPromoId(pr.id);
       setErrores([]);
+      if (pr.surtido) {
+        // en el surtido no se eligen heladitos sueltos: se sacan los que había (los XL quedan)
+        setPaquetes(1);
+        setCant((c) => Object.fromEntries(Object.entries(c).filter(([k]) => !k.startsWith("g:"))));
+        avisar(`Paquete surtido de ${pr.minimo} heladitos. Elegí cuántos paquetes querés.`);
+        return;
+      }
       if (pr.sabores) {
         // si ya había sabores que no entran en la promo, se sacan
         setCant((c) => {
@@ -153,10 +163,13 @@ export default function Armador(p: Props) {
     ].filter((l) => l.cantidad > 0),
     [cant, p.sabores, p.xl],
   );
-  const c = calcularPedido(lineas, p.escalones, p.senaPorcentaje, { precioPromoGourmet: promo?.precioUnidad });
+  const surtido = promo?.surtido && promo.precioPaquete ? { paquetes, unidades: promo.minimo, precioPaquete: promo.precioPaquete } : null;
+  // sabores del surtido: los disponibles (para otro día también los de "Hoy no hay")
+  const saboresSurtido = p.sabores.filter((s) => s.estado === "disponible" || (modo === "otro_dia" && s.estado === "hoy_no_hay")).map((s) => s.nombre);
+  const c = calcularPedido(lineas, p.escalones, p.senaPorcentaje, { precioPromoGourmet: promo?.precioUnidad, surtido });
   const saboresVisibles = promo?.sabores ? p.sabores.filter((s) => promo.sabores!.includes(s.slug)) : p.sabores;
-  const faltanPromo = promo ? Math.max(0, promo.minimo - c.unidadesGourmet) : 0;
-  const vacio = lineas.length === 0;
+  const faltanPromo = promo && !surtido ? Math.max(0, promo.minimo - c.unidadesGourmet) : 0;
+  const vacio = lineas.length === 0 && !surtido;
 
   const escG = p.escalones.filter((e) => e.producto === "gourmet").sort((a, b) => a.desde - b.desde);
   const escX = p.escalones.filter((e) => e.producto === "xl").sort((a, b) => a.desde - b.desde);
@@ -165,7 +178,9 @@ export default function Armador(p: Props) {
   const siguienteX = escX.find((e) => e.desde > c.unidadesXl);
 
   let nota = "";
-  if (promo) {
+  if (surtido) {
+    nota = `${paquetes} paquete${paquetes > 1 ? "s" : ""} surtido${paquetes > 1 ? "s" : ""}: ${c.unidadesGourmet} heladitos en ${saboresSurtido.length} sabores, ${textoReparto(c.unidadesGourmet, saboresSurtido.length)}.`;
+  } else if (promo) {
     nota = faltanPromo
       ? `Llevás ${c.unidadesGourmet} de ${promo.minimo}. Te faltan ${faltanPromo} heladitos para la promo.`
       : `¡Listo! ${c.unidadesGourmet} heladitos a ${gs(c.precioGourmet)} cada uno. Podés sumar más sabores o Helados XL.`;
@@ -186,6 +201,7 @@ export default function Armador(p: Props) {
   const mensaje = mensajePedido({
     modalidad: modo, lineas, calculo: c, senaPorcentaje: p.senaPorcentaje, entrega,
     fechaEntrega: fecha || "", hora, nombre, factura: conFactura ? fac : null, promo,
+    surtido: surtido ? { ...surtido, sabores: saboresSurtido } : null,
   });
 
   async function mandar() {
@@ -224,6 +240,7 @@ export default function Armador(p: Props) {
           nombre,
           factura: conFactura ? { ...fac, ruc: formatearRuc(fac.ruc.trim()) } : null,
           promoId: promo?.id,
+          paquetesSurtido: surtido ? paquetes : undefined,
           sitio_web: trampa || undefined,
         }),
       });
@@ -285,11 +302,26 @@ export default function Armador(p: Props) {
           <div className="promo-activa" role="status">
             <span className="cinta-promo">Promo</span>
             <b>{promo.titulo}</b>
+            {surtido ? (
+              <>
+                <p>Paquete de {promo.minimo} heladitos a {gs(surtido.precioPaquete)}. Van surtidos en los {saboresSurtido.length} sabores, {textoReparto(promo.minimo, saboresSurtido.length)}. También podés agregar Helados XL.</p>
+                <ul className="sabores-surtido" aria-label="Sabores del surtido">{saboresSurtido.map((n) => <li key={n}>{n}</li>)}</ul>
+                <div className="paquetes-surtido">
+                  <span id="paq-n">¿Cuántos paquetes?</span>
+                  <span className="contador">
+                    <button type="button" aria-label="Un paquete menos" onClick={() => setPaquetes((n) => Math.max(1, n - 1))} disabled={paquetes <= 1}>−</button>
+                    <output aria-labelledby="paq-n">{paquetes}</output>
+                    <button type="button" aria-label="Un paquete más" onClick={() => setPaquetes((n) => Math.min(50, n + 1))}>+</button>
+                  </span>
+                </div>
+              </>
+            ) : (
             <p>
               Desde {promo.minimo} heladitos{promo.precioUnidad ? ` a ${gs(promo.precioUnidad)} cada uno` : ""}
               {promo.sabores ? ", de los sabores de la lista" : ", mezclá los sabores que quieras"}. Si querés más, sumá nomás. También podés agregar Helados XL.
             </p>
-            <div className="promo-progreso" aria-hidden="true"><span style={{ transform: `scaleX(${Math.min(1, c.unidadesGourmet / promo.minimo)})` }} /></div>
+            )}
+            {!surtido ? <div className="promo-progreso" aria-hidden="true"><span style={{ transform: `scaleX(${Math.min(1, c.unidadesGourmet / promo.minimo)})` }} /></div> : null}
             <button type="button" className="quitar-promo" onClick={quitarPromo}>Quitar promo</button>
           </div>
         ) : null}
@@ -306,7 +338,7 @@ export default function Armador(p: Props) {
             ? `Para hoy: elegís los sabores que tenemos hoy y la cantidad que quieras. Retirás o te lo mandamos de ${p.horaDesde} a ${p.horaHasta} h. Te confirmamos por WhatsApp.`
             : "Para otro día: pedís 1 día antes o más, elegís los sabores que quieras y los mezclamos."}
         </p>
-        <fieldset className="lista-pedido">
+        <fieldset className="lista-pedido" hidden={!!surtido}>
           <legend>Heladitos <small>{`de a ${p.pasoAnticipado}, mezclá como quieras`}</small></legend>
           <div>{saboresVisibles.map((s) => fila("g", s, p.atajosGourmet))}</div>
         </fieldset>
@@ -320,6 +352,7 @@ export default function Armador(p: Props) {
       <aside className="resumen" aria-live="polite">
         <h3>{promo ? "Tu pedido con promo" : "Tu pedido"}</h3>
         <div className="resumen-items">
+          {surtido ? <span>{paquetes} paquete{paquetes > 1 ? "s" : ""} surtido{paquetes > 1 ? "s" : ""} de {surtido.unidades} ({c.unidadesGourmet} heladitos)</span> : null}
           {vacio ? <p className="vacio">Todavía no elegiste sabores.</p> : lineas.map((l) => (
             <span key={l.tipo + l.sabor}>{l.cantidad} {l.tipo === "xl" ? "XL" : "heladitos"} de {l.sabor}</span>
           ))}

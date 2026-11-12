@@ -72,13 +72,16 @@ export const promo = pgTable("promo", {
   minimo: integer("minimo"),
   precioUnidad: integer("precio_unidad"), // G. por heladito dentro de la promo; null = precio por cantidad normal
   sabores: jsonb("sabores").$type<string[] | null>(), // slugs de heladitos que entran; null = todos
+  // Paquete surtido: el cliente no elige sabores, pide paquetes de `minimo` heladitos surtidos en todos los sabores disponibles
+  surtido: boolean("surtido").notNull().default(false),
+  precioPaquete: integer("precio_paquete"), // G. por paquete surtido
   terminadaEn: timestamp("terminada_en", { withTimezone: true }),
   eliminadoEn: eliminado(),
 });
 
 export type LineaPedido = { tipo: "gourmet" | "xl"; sabor: string; cantidad: number };
 export type DatosFactura = { nombre_apellido: string; ruc: string; correo: string };
-export type PromoPedido = { id: number; titulo: string; minimo: number; precioUnidad: number | null };
+export type PromoPedido = { id: number; titulo: string; minimo: number; precioUnidad: number | null; surtido?: { paquetes: number; precioPaquete: number; sabores: string[] } };
 
 export const pedido = pgTable(
   "pedido",

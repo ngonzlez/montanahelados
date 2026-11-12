@@ -65,11 +65,21 @@
     d.querySelector('[data-no]').onclick = () => d.remove();
     d.querySelector('[data-si]').onclick = () => { d.remove(); si(); };
   }
+  // formulario de promo: muestra los campos del tipo elegido (el cliente elige / paquete surtido)
+  function tipoPromo(d) {
+    const aplicar = () => {
+      const t = d.querySelector('input[name=tipo]:checked')?.value || 'elige';
+      d.querySelectorAll('[data-tipo]').forEach((x) => { x.hidden = x.dataset.tipo !== t; });
+      const l = d.querySelector('label[for=f-minimo]'); if (l) l.textContent = t === 'surtido' ? 'Heladitos por paquete' : 'Mínimo de heladitos';
+    };
+    d.querySelectorAll('input[name=tipo]').forEach((r) => r.addEventListener('change', aplicar)); aplicar();
+  }
   function lado(titulo, campos, guardar, { boton = 'Guardar' } = {}) {
     cerrarLado();
     const d = document.createElement('aside'); d.className = 'lado'; d.id = 'lado';
     d.innerHTML = `<h3>${esc(titulo)}</h3><form id="form-lado" style="display:grid;gap:12px" novalidate>${campos}<div class="acciones" style="justify-content:flex-start">${guardar ? `<button class="btn pri" type="submit">${boton}</button>` : ''}<button class="btn" type="button" data-cerrar>${guardar ? 'Cancelar' : 'Cerrar'}</button></div></form>`;
     document.body.appendChild(d); d.querySelector('input,textarea,select')?.focus();
+    if (d.querySelector('input[name=tipo]')) tipoPromo(d);
     d.querySelector('[data-cerrar]').onclick = cerrarLado;
     d.querySelector('form').onsubmit = async (e) => {
       e.preventDefault(); if (!guardar) return;
@@ -141,7 +151,7 @@
     promos() {
       return `<div class="cabeza"><h2>Promos</h2><span class="contador">${db.promos.length} ${db.promos.length === 1 ? 'promo' : 'promos'}</span><button class="btn pri" data-nuevo="promos">Nueva promo</button></div>
       <div class="tabla tarjetas-movil"><table><thead><tr><th>#</th><th>Foto</th><th>Título</th><th>Desde</th><th>Hasta</th><th>Estado</th><th></th></tr></thead><tbody>
-      ${db.promos.map((p) => { const e = estadoPromo(p); return `<tr><td class="id">#${p.id}</td><td class="sel">${p.foto ? `<img class="mini foto" src="${esc(p.foto)}" alt="">` : ''}</td><td class="full"><b>${esc(p.titulo)}</b>${p.minimo ? `<br><small>Se arma en la web · desde ${p.minimo} heladitos${p.precioUnidad ? ` a ${gs(p.precioUnidad)}` : ''}${p.sabores.length ? ` · ${p.sabores.length} sabores` : ''}</small>` : ''}</td><td data-l="Desde">${p.desde ? fecha(p.desde) : 'ya'}</td><td data-l="Hasta">${p.hasta ? fecha(p.hasta) : 'sin fecha'}</td><td data-l="Estado"><span class="chip ${e}">${e}</span></td>
+      ${db.promos.map((p) => { const e = estadoPromo(p); return `<tr><td class="id">#${p.id}</td><td class="sel">${p.foto ? `<img class="mini foto" src="${esc(p.foto)}" alt="">` : ''}</td><td class="full"><b>${esc(p.titulo)}</b>${p.minimo ? `<br><small>${p.surtido ? `Paquete surtido de ${p.minimo} a ${gs(p.precioPaquete || 0)}` : `Se arma en la web · desde ${p.minimo} heladitos${p.precioUnidad ? ` a ${gs(p.precioUnidad)}` : ''}${p.sabores.length ? ` · ${p.sabores.length} sabores` : ''}`}</small>` : ''}</td><td data-l="Desde">${p.desde ? fecha(p.desde) : 'ya'}</td><td data-l="Hasta">${p.hasta ? fecha(p.hasta) : 'sin fecha'}</td><td data-l="Estado"><span class="chip ${e}">${e}</span></td>
       <td class="full"><div class="acciones">${e !== 'finalizada' ? `<button class="btn chico" data-terminar="${p.id}">Terminar promo</button>` : ''}<button class="btn chico" data-duplicar="${p.id}">Duplicar</button><button class="btn chico" data-editar="promos" data-id="${p.id}">Editar</button><button class="btn chico peligro" data-borrar="promos" data-id="${p.id}">Eliminar</button></div></td></tr>`; }).join('')}
       </tbody></table>${db.promos.length ? '' : '<div class="vacio">No hay promos. Tocá "Nueva promo".</div>'}</div>
       <p><small>La fecha "hasta" es opcional. Sin fecha, la promo queda hasta que toques "Terminar promo". Terminada, deja de verse en la web pero no se borra.</small></p>`;
@@ -253,18 +263,27 @@
         campo('titulo', 'Título', item?.titulo, 'text', 'Es lo que se lee grande y lo que llega en el mensaje de WhatsApp.', 'maxlength="100" required') + campo('detalle', 'Detalle', item?.detalle, 'textarea', '', 'maxlength="400"') + campoFoto(item?.foto) +
         campo('desde', 'Desde', item ? item.desde : hoyISO(), 'date') + campo('hasta', 'Hasta (opcional)', item?.hasta, 'date', 'Si la dejás vacía, la promo queda hasta que toques "Terminar promo".') +
         `<fieldset class="campo promo-armar"><legend><b>Que el cliente la arme en la web</b></legend>
-          <small>Si ponés un mínimo, al tocar "Pedir esta promo" el cliente elige los sabores, ve el total y te manda el pedido completo por WhatsApp (puede sumar más y agregar XL). Si lo dejás vacío, solo abre WhatsApp con el título.</small>
-          ${campo('minimo', 'Mínimo de heladitos', item?.minimo ?? '', 'number', 'Por ejemplo: 100.', 'min="1" max="5000" step="1" inputmode="numeric"')}
-          ${campo('precioUnidad', 'Precio por heladito en la promo (opcional)', item?.precioUnidad ?? '', 'number', 'Vacío: se usa el precio por cantidad de siempre.', 'min="1" step="1" inputmode="numeric"')}
+          <small>Si completás la cantidad, al tocar "Pedir esta promo" el cliente arma el pedido en la web, ve el total y te lo manda completo por WhatsApp (puede agregar XL). Si la dejás vacía, solo abre WhatsApp con el título.</small>
+          <div class="tipo-promo" role="radiogroup" aria-label="Tipo de promo">
+            <label><input type="radio" name="tipo" value="elige" ${item?.surtido ? '' : 'checked'}> <span><b>El cliente elige los sabores</b><small>Desde un mínimo; puede pedir más.</small></span></label>
+            <label><input type="radio" name="tipo" value="surtido" ${item?.surtido ? 'checked' : ''}> <span><b>Paquete surtido</b><small>Vos lo armás con todos los sabores disponibles; el cliente elige cuántos paquetes.</small></span></label>
+          </div>
+          ${campo('minimo', item?.surtido ? 'Heladitos por paquete' : 'Mínimo de heladitos', item?.minimo ?? '', 'number', 'Por ejemplo: 100.', 'min="1" max="5000" step="1" inputmode="numeric"')}
+          <div data-tipo="surtido">${campo('precioPaquete', 'Precio del paquete', item?.precioPaquete ?? '', 'number', 'Por ejemplo: 200000. El cliente ve los sabores y cuántos van de cada uno.', 'min="1" step="1" inputmode="numeric"')}</div>
+          <div data-tipo="elige">${campo('precioUnidad', 'Precio por heladito en la promo (opcional)', item?.precioUnidad ?? '', 'number', 'Vacío: se usa el precio por cantidad de siempre.', 'min="1" step="1" inputmode="numeric"')}
           <div class="campo"><span><b>Sabores que entran</b></span><small>Si no marcás ninguno, entran todos.</small>
-            <div class="sabores-promo">${db.sabores.filter((s) => s.estado !== 'oculto' || item?.sabores?.includes(s.slug)).map((s) => `<label><input type="checkbox" name="sabores" value="${esc(s.slug)}" ${item?.sabores?.includes(s.slug) ? 'checked' : ''}> ${esc(s.nombre)}</label>`).join('')}</div></div>
+            <div class="sabores-promo">${db.sabores.filter((s) => s.estado !== 'oculto' || item?.sabores?.includes(s.slug)).map((s) => `<label><input type="checkbox" name="sabores" value="${esc(s.slug)}" ${item?.sabores?.includes(s.slug) ? 'checked' : ''}> ${esc(s.nombre)}</label>`).join('')}</div></div></div>
         </fieldset>`,
         async (f, d) => {
           const titulo = String(f.get('titulo') || '').trim(); if (!titulo) { avisar('Poné un título'); return false; }
-          const minimo = f.get('minimo') ? Math.round(+f.get('minimo')) : null, precioUnidad = f.get('precioUnidad') ? Math.round(+f.get('precioUnidad')) : null;
+          const surtido = f.get('tipo') === 'surtido';
+          const minimo = f.get('minimo') ? Math.round(+f.get('minimo')) : null, precioUnidad = !surtido && f.get('precioUnidad') ? Math.round(+f.get('precioUnidad')) : null;
+          const precioPaquete = surtido && f.get('precioPaquete') ? Math.round(+f.get('precioPaquete')) : null;
           if (precioUnidad && !minimo) { avisar('Para poner precio de promo, poné también el mínimo'); return false; }
+          if (surtido && minimo && !precioPaquete) { avisar('Poné el precio del paquete'); return false; }
+          if (surtido && precioPaquete && !minimo) { avisar('Poné cuántos heladitos trae el paquete'); return false; }
           const foto = await subirFoto(d.querySelector('#f-foto').files[0]); if (foto === false) return false;
-          return hacer({ accion: 'guardar_promo', id: item?.id, titulo, detalle: String(f.get('detalle') || ''), desde: String(f.get('desde') || ''), hasta: String(f.get('hasta') || ''), foto: foto || undefined, minimo, precioUnidad, sabores: f.getAll('sabores').map(String) });
+          return hacer({ accion: 'guardar_promo', id: item?.id, titulo, detalle: String(f.get('detalle') || ''), desde: String(f.get('desde') || ''), hasta: String(f.get('hasta') || ''), foto: foto || undefined, minimo, precioUnidad, sabores: surtido ? [] : f.getAll('sabores').map(String), surtido, precioPaquete });
         });
     }
     if (lista === 'puntos') {
@@ -288,7 +307,7 @@
   function verPedido(p) {
     const fac = p.factura;
     lado('Pedido ' + p.codigo,
-      `<div class="previa detalle-pedido"><b>${esc(p.nombre)}</b>${p.promo ? `<span class="chip vigente">Promo: ${esc(p.promo.titulo)}</span>` : ''}
+      `<div class="previa detalle-pedido"><b>${esc(p.nombre)}</b>${p.promo ? `<span class="chip vigente">Promo: ${esc(p.promo.titulo)}</span>${p.promo.surtido ? `<span><b>${p.promo.surtido.paquetes} paquete${p.promo.surtido.paquetes > 1 ? 's' : ''} surtido${p.promo.surtido.paquetes > 1 ? 's' : ''}</b> a ${gs(p.promo.surtido.precioPaquete)} c/u. Para preparar:</span>` : ''}` : ''}
         <span>${p.detalle.map((l) => `${l.cantidad} ${l.tipo === 'xl' ? 'XL' : 'heladitos'} de ${esc(l.sabor)}`).join('<br>')}</span>
         <span>${p.modalidad === 'hoy' ? 'Para hoy' : 'Para otro día'}: <b>${cap(diaTxt(p.fechaEntrega))}</b> (${fecha(p.fechaEntrega)})${p.hora ? ` a las <b>${esc(p.hora)} h</b>` : ''} · ${p.entrega === 'bolt' ? 'Bolt Envíos' : 'Retiro en Reducto'}</span>
         ${p.unidadesGourmet ? `<span>${p.unidadesGourmet} heladitos a ${gs(p.precioGourmet)}</span>` : ''}${p.unidadesXl ? `<span>${p.unidadesXl} XL a ${gs(p.precioXl)}</span>` : ''}

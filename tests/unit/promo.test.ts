@@ -48,3 +48,44 @@ describe("promo armada en la web", () => {
     expect(m).toContain("Total: 100 heladitos a G. 2.000 c/u = G. 200.000");
   });
 });
+
+import { repartirSurtido, textoReparto } from "@/lib/surtido";
+import { saboresParaSurtido } from "@/lib/pedido";
+
+describe("promo de paquete surtido", () => {
+  const nueve = ["Mburukuja", "Dulce de Leche", "Chocolate", "Menta", "Frutilla", "Crema Americana", "Pistacho", "Leche Condensada", "Uva"];
+  it("100 en 9 sabores: 11 de cada uno y 1 más en el primero", () => {
+    const r = repartirSurtido(100, nueve);
+    expect(r.reduce((a, x) => a + x.cantidad, 0)).toBe(100);
+    expect(r[0].cantidad).toBe(12);
+    expect(r.slice(1).every((x) => x.cantidad === 11)).toBe(true);
+    expect(textoReparto(100, 9)).toBe("unos 11 de cada uno");
+    expect(textoReparto(200, 8)).toBe("25 de cada uno");
+  });
+  it("precio por paquete; los XL aparte a precio normal", () => {
+    const lineas = [...repartirSurtido(200, nueve).map((x) => ({ tipo: "gourmet" as const, ...x })), { tipo: "xl" as const, sabor: "Oreo", cantidad: 5 }];
+    const c = calcularPedido(lineas, esc, 50, { surtido: { paquetes: 2, unidades: 100, precioPaquete: 200000 } });
+    expect(c.unidadesGourmet).toBe(200);
+    expect(c.subtotalGourmet).toBe(400000);
+    expect(c.total).toBe(400000 + 5 * 7000);
+  });
+  it("no deja elegir heladitos sueltos y pide cantidad de paquetes", () => {
+    const surt = { titulo: "Surtido 100", minimo: 100, sabores: null, surtido: true };
+    expect(validarPedido(base({ lineas: [{ tipo: "gourmet", slug: "uva", cantidad: 10 }], paquetesSurtido: 1 }), cat, { ahora, promo: surt }).ok).toBe(false);
+    expect(validarPedido(base({ lineas: [] }), cat, { ahora, promo: surt }).ok).toBe(false);
+    expect(validarPedido(base({ lineas: [{ tipo: "xl", slug: "oreo", cantidad: 3 }], paquetesSurtido: 2 }), cat, { ahora, promo: surt }).ok).toBe(true);
+  });
+  it("sabores del surtido: para hoy solo los disponibles", () => {
+    const c2: ItemCatalogo[] = [...cat, { tipo: "gourmet", slug: "menta", nombre: "Menta", estado: "hoy_no_hay" }, { tipo: "gourmet", slug: "pistacho", nombre: "Pistacho", estado: "agotado" }];
+    expect(saboresParaSurtido(c2, "hoy")).toEqual(["Frutilla", "Chocolate", "Uva"]);
+    expect(saboresParaSurtido(c2, "otro_dia")).toEqual(["Frutilla", "Chocolate", "Uva", "Menta"]);
+  });
+  it("el mensaje dice paquetes, sabores y cuántos de cada uno", () => {
+    const lineas = repartirSurtido(100, nueve).map((x) => ({ tipo: "gourmet" as const, ...x }));
+    const surtido = { paquetes: 1, unidades: 100, precioPaquete: 200000 };
+    const m = mensajePedido({ modalidad: "otro_dia", lineas, calculo: calcularPedido(lineas, esc, 50, { surtido }), senaPorcentaje: 50, entrega: "retiro", fechaEntrega: "2026-11-13", hora: "10:00", nombre: "Kiosco", promo: { titulo: "Surtido 100" }, surtido: { ...surtido, sabores: nueve } });
+    expect(m).toContain("- 1 paquete de 100 (100 heladitos) a G. 200.000 c/u = G. 200.000");
+    expect(m).toContain("Surtidos en 9 sabores, unos 11 de cada uno: Mburukuja, Dulce de Leche");
+    expect(m).toContain("Total estimado: G. 200.000");
+  });
+});

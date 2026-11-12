@@ -65,6 +65,7 @@ tests/unit/           vitest
 
 - Los precios salen de la tabla `escalon_precio`, nunca de números en el código. Heladitos: 1 → G. 3.000, 50 → G. 2.500, 100 → G. 2.000. XL: 1 → G. 7.000, 30 → G. 5.000. Los escalones suman todos los sabores.
 - Seña del 50 % (ajustes), redondeada a G. 1.000.
+- Promo de paquete surtido (otro tipo de promo armable): el cliente elige cuántos paquetes; cada paquete se reparte parejo entre los sabores disponibles (para hoy, solo "Disponible"; ej. 100 en 9 sabores → 12 + 8 × 11), con precio fijo por paquete. Se le pueden sumar XL a precio normal; heladitos sueltos no.
 - Promo armable: pide al menos el mínimo de heladitos (los XL no cuentan y van a precio normal). El precio de promo se usa solo si es mejor que el de la escala. El servidor vuelve a leer la promo y rechaza el pedido si ya terminó.
 - "Para hoy": cualquier cantidad, solo sabores "Disponible". "Para otro día": desde mañana y hasta 90 días, cualquier cantidad, sabores "Disponible" u "Hoy no hay".
 - Entregas de lunes a sábado (los domingos no se pueden elegir). El cliente elige la hora de retiro o envío cada 30 minutos dentro del horario de Ajustes (por defecto 10 a 18 h); para hoy, solo las horas que faltan con 30 minutos de margen.

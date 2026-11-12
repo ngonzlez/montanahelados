@@ -254,6 +254,10 @@ input[type=text],input[type=email],input[type=tel],input[type=date],textarea{fon
 .promo-activa p{margin:0;font-weight:700;font-size:17px}
 .promo-progreso{position:relative;height:16px;border:3px solid var(--choco);border-radius:999px;background:var(--leche);overflow:hidden;margin-top:4px}
 .promo-progreso span{position:absolute;inset:0;background:var(--choco);transform-origin:left;transition:transform .45s cubic-bezier(.3,1.3,.5,1)}
+.sabores-surtido{list-style:none;margin:2px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.sabores-surtido li{background:var(--leche);border:2px solid var(--choco);border-radius:999px;padding:3px 10px;font:800 14px var(--texto)}
+.paquetes-surtido{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:6px;font:800 18px var(--texto)}
+.paquetes-surtido output{font-size:24px}
 .quitar-promo{justify-self:start;background:none;border:0;padding:6px 0;color:var(--choco);font:800 16px var(--texto);text-decoration:underline;cursor:pointer}
 .modo-nota{font-weight:700;font-size:17px;background:var(--leche);border:3px dashed var(--choco);border-radius:18px;padding:10px 14px}
 .escala{display:grid;gap:6px}
