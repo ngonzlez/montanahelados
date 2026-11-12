@@ -307,7 +307,7 @@ export default function Armador(p: Props) {
               <>
                 <p className="precio-paquete">Paquete de {promo.minimo} heladitos a {gs(surtido.precioPaquete)}</p>
                 {/* lo que escribió la dueña en "Detalle"; si está vacío, una explicación automática */}
-                <p>{conPunto(promo.detalle.trim() || `Van surtidos en los ${saboresSurtido.length} sabores, ${textoReparto(promo.minimo, saboresSurtido.length)}`)} También podés agregar Helados XL.</p>
+                <p>{conPunto(promo.detalle.trim() || `Van surtidos en los ${saboresSurtido.length} sabores, ${textoReparto(promo.minimo, saboresSurtido.length)}`)}</p>
                 <p className="aviso-surtido"><b>Es un paquete listo:</b> va surtido con todos estos sabores. No se pueden cambiar ni sacar sabores.</p>
                 <ul className="sabores-surtido" aria-label="Sabores del surtido">{saboresSurtido.map((n) => <li key={n}>{n}</li>)}</ul>
                 <div className="paquetes-surtido">
