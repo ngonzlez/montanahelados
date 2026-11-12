@@ -11,7 +11,7 @@ import arte from "@/content/arte.json";
 
 type Estado = "disponible" | "hoy_no_hay" | "agotado" | "oculto";
 export type ItemArmador = { slug: string; nombre: string; detalle?: string; foto: string | null; estado: Estado };
-export type PromoArmador = { id: number; titulo: string; minimo: number; precioUnidad: number | null; sabores: string[] | null; surtido: boolean; precioPaquete: number | null };
+export type PromoArmador = { id: number; titulo: string; minimo: number; precioUnidad: number | null; sabores: string[] | null; surtido: boolean; precioPaquete: number | null; detalle: string };
 
 type Props = {
   sabores: ItemArmador[];
@@ -29,6 +29,7 @@ type Props = {
 };
 
 type Modo = "otro_dia" | "hoy";
+const conPunto = (t: string) => (/[.!?…]$/.test(t) ? t : `${t}.`);
 /** RUC paraguayo: números y un guion antes del dígito verificador. Si escriben solo números, el guion se pone solo. */
 const formatearRuc = (v: string) => {
   const limpio = v.replace(/[^\d-]/g, "").replace(/-+/g, "-");
@@ -179,7 +180,7 @@ export default function Armador(p: Props) {
 
   let nota = "";
   if (surtido) {
-    nota = `${paquetes} paquete${paquetes > 1 ? "s" : ""} surtido${paquetes > 1 ? "s" : ""}: ${c.unidadesGourmet} heladitos en ${saboresSurtido.length} sabores, ${textoReparto(c.unidadesGourmet, saboresSurtido.length)}.`;
+    nota = `${paquetes} paquete${paquetes > 1 ? "s" : ""} de ${promo!.minimo} heladitos surtidos: ${c.unidadesGourmet} en total.`;
   } else if (promo) {
     nota = faltanPromo
       ? `Llevás ${c.unidadesGourmet} de ${promo.minimo}. Te faltan ${faltanPromo} heladitos para la promo.`
@@ -304,7 +305,10 @@ export default function Armador(p: Props) {
             <b>{promo.titulo}</b>
             {surtido ? (
               <>
-                <p>Paquete de {promo.minimo} heladitos a {gs(surtido.precioPaquete)}. Van surtidos en los {saboresSurtido.length} sabores, {textoReparto(promo.minimo, saboresSurtido.length)}. También podés agregar Helados XL.</p>
+                <p className="precio-paquete">Paquete de {promo.minimo} heladitos a {gs(surtido.precioPaquete)}</p>
+                {/* lo que escribió la dueña en "Detalle"; si está vacío, una explicación automática */}
+                <p>{conPunto(promo.detalle.trim() || `Van surtidos en los ${saboresSurtido.length} sabores, ${textoReparto(promo.minimo, saboresSurtido.length)}`)} También podés agregar Helados XL.</p>
+                <p className="aviso-surtido"><b>Es un paquete listo:</b> va surtido con todos estos sabores. No se pueden cambiar ni sacar sabores.</p>
                 <ul className="sabores-surtido" aria-label="Sabores del surtido">{saboresSurtido.map((n) => <li key={n}>{n}</li>)}</ul>
                 <div className="paquetes-surtido">
                   <span id="paq-n">¿Cuántos paquetes?</span>
@@ -316,10 +320,13 @@ export default function Armador(p: Props) {
                 </div>
               </>
             ) : (
-            <p>
-              Desde {promo.minimo} heladitos{promo.precioUnidad ? ` a ${gs(promo.precioUnidad)} cada uno` : ""}
-              {promo.sabores ? ", de los sabores de la lista" : ", mezclá los sabores que quieras"}. Si querés más, sumá nomás. También podés agregar Helados XL.
-            </p>
+              <>
+                <p>
+                  Desde {promo.minimo} heladitos{promo.precioUnidad ? ` a ${gs(promo.precioUnidad)} cada uno` : ""}
+                  {promo.sabores ? ", de los sabores de la lista" : ", mezclá los sabores que quieras"}. Si querés más, sumá nomás. También podés agregar Helados XL.
+                </p>
+                {promo.detalle.trim() ? <p>{promo.detalle.trim()}</p> : null}
+              </>
             )}
             {!surtido ? <div className="promo-progreso" aria-hidden="true"><span style={{ transform: `scaleX(${Math.min(1, c.unidadesGourmet / promo.minimo)})` }} /></div> : null}
             <button type="button" className="quitar-promo" onClick={quitarPromo}>Quitar promo</button>

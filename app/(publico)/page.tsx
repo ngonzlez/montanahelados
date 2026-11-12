@@ -231,7 +231,7 @@ export default async function Inicio() {
               pasoAnticipado={reglas.paso_anticipado ?? 5}
               atajosGourmet={reglas.atajos_gourmet ?? [25, 50]}
               atajosXl={reglas.atajos_xl ?? [5, 30]}
-              promos={d.promos.filter((pr) => pr.minimo && (!pr.surtido || pr.precioPaquete)).map((pr) => ({ id: pr.id, titulo: pr.titulo, minimo: pr.minimo!, precioUnidad: pr.precioUnidad, sabores: pr.sabores?.length && !pr.surtido ? pr.sabores : null, surtido: pr.surtido && !!pr.precioPaquete, precioPaquete: pr.precioPaquete }))}
+              promos={d.promos.filter((pr) => pr.minimo && (!pr.surtido || pr.precioPaquete)).map((pr) => ({ id: pr.id, titulo: pr.titulo, minimo: pr.minimo!, precioUnidad: pr.precioUnidad, sabores: pr.sabores?.length && !pr.surtido ? pr.sabores : null, surtido: pr.surtido && !!pr.precioPaquete, precioPaquete: pr.precioPaquete, detalle: pr.detalle }))}
             />
           </div>
         </section>

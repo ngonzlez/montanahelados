@@ -13,6 +13,7 @@ export function repartirSurtido(total: number, sabores: string[]): Reparto {
 /** "unos 11 de cada uno" o "22 de cada uno" si sale justo. */
 export function textoReparto(total: number, nSabores: number): string {
   if (!nSabores) return "";
-  const base = Math.floor(total / nSabores);
-  return total % nSabores ? `unos ${base} de cada uno` : `${base} de cada uno`;
+  const base = Math.floor(total / nSabores), resto = total % nSabores;
+  if (!resto) return `${base} de cada uno`;
+  return `${base} de cada uno y ${resto} más para completar ${total}`;
 }

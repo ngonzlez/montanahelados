@@ -117,6 +117,7 @@ select.inline{width:auto}
 .tipo-promo input{width:22px;height:22px;margin-top:2px;accent-color:var(--choco)}
 .tipo-promo span{display:grid;gap:2px}
 [data-tipo][hidden]{display:none}
+.reparto-previa{margin:-4px 0 0;background:var(--leche);border:2px dashed var(--choco);border-radius:12px;padding:8px 12px;font-weight:700}
 .promo-armar{border:3px dashed var(--choco);border-radius:16px;padding:12px 14px;gap:10px;margin:0}
 .promo-armar legend{padding:0 6px}
 .sabores-promo{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px 12px}

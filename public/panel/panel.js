@@ -66,12 +66,24 @@
     d.querySelector('[data-si]').onclick = () => { d.remove(); si(); };
   }
   // formulario de promo: muestra los campos del tipo elegido (el cliente elige / paquete surtido)
+  const saboresDisponibles = () => db.sabores.filter((s) => s.estado === 'disponible' || s.estado === 'hoy_no_hay').length;
   function tipoPromo(d) {
     const aplicar = () => {
       const t = d.querySelector('input[name=tipo]:checked')?.value || 'elige';
       d.querySelectorAll('[data-tipo]').forEach((x) => { x.hidden = x.dataset.tipo !== t; });
-      const l = d.querySelector('label[for=f-minimo]'); if (l) l.textContent = t === 'surtido' ? 'Heladitos por paquete' : 'Mínimo de heladitos';
+      const l = d.querySelector('label[for=f-minimo]'); if (l) l.textContent = t === 'surtido' ? 'Total de heladitos del paquete' : 'Mínimo de heladitos';
+      previa();
     };
+    // vista previa del reparto: así queda claro que es el TOTAL del paquete, no por sabor
+    const previa = () => {
+      const el = d.querySelector('.reparto-previa'); if (!el) return;
+      const n = Math.round(+d.querySelector('#f-minimo').value || 0), k = saboresDisponibles();
+      if (!n || !k) { el.textContent = 'Poné el total del paquete (por ejemplo 100), no lo que va de cada sabor.'; return; }
+      if (n < k * 3) { el.innerHTML = `<b>Ojo:</b> ${n} parece lo que va de cada sabor. Acá va el <b>total del paquete</b>, por ejemplo 100.`; return; }
+      const base = Math.floor(n / k), resto = n % k;
+      el.innerHTML = `Con los <b>${k} sabores</b> disponibles van <b>${base} de cada sabor</b>${resto ? ` y <b>${resto} más</b> para completar ${n}` : ''}.`;
+    };
+    d.querySelector('#f-minimo')?.addEventListener('input', previa);
     d.querySelectorAll('input[name=tipo]').forEach((r) => r.addEventListener('change', aplicar)); aplicar();
   }
   function lado(titulo, campos, guardar, { boton = 'Guardar' } = {}) {
@@ -266,9 +278,10 @@
           <small>Si completás la cantidad, al tocar "Pedir esta promo" el cliente arma el pedido en la web, ve el total y te lo manda completo por WhatsApp (puede agregar XL). Si la dejás vacía, solo abre WhatsApp con el título.</small>
           <div class="tipo-promo" role="radiogroup" aria-label="Tipo de promo">
             <label><input type="radio" name="tipo" value="elige" ${item?.surtido ? '' : 'checked'}> <span><b>El cliente elige los sabores</b><small>Desde un mínimo; puede pedir más.</small></span></label>
-            <label><input type="radio" name="tipo" value="surtido" ${item?.surtido ? 'checked' : ''}> <span><b>Paquete surtido</b><small>Vos lo armás con todos los sabores disponibles; el cliente elige cuántos paquetes.</small></span></label>
+            <label><input type="radio" name="tipo" value="surtido" ${item?.surtido ? 'checked' : ''}> <span><b>Paquete surtido</b><small>Paquete listo con todos los sabores disponibles; el cliente elige cuántos paquetes, no los sabores. Si agregás un sabor nuevo (o volvés a poner uno en "Disponible"), entra solo en el paquete.</small></span></label>
           </div>
-          ${campo('minimo', item?.surtido ? 'Heladitos por paquete' : 'Mínimo de heladitos', item?.minimo ?? '', 'number', 'Por ejemplo: 100.', 'min="1" max="5000" step="1" inputmode="numeric"')}
+          ${campo('minimo', item?.surtido ? 'Total de heladitos del paquete' : 'Mínimo de heladitos', item?.minimo ?? '', 'number', 'Por ejemplo: 100.', 'min="1" max="5000" step="1" inputmode="numeric"')}
+          <p class="reparto-previa" data-tipo="surtido" aria-live="polite"></p>
           <div data-tipo="surtido">${campo('precioPaquete', 'Precio del paquete', item?.precioPaquete ?? '', 'number', 'Por ejemplo: 200000. El cliente ve los sabores y cuántos van de cada uno.', 'min="1" step="1" inputmode="numeric"')}</div>
           <div data-tipo="elige">${campo('precioUnidad', 'Precio por heladito en la promo (opcional)', item?.precioUnidad ?? '', 'number', 'Vacío: se usa el precio por cantidad de siempre.', 'min="1" step="1" inputmode="numeric"')}
           <div class="campo"><span><b>Sabores que entran</b></span><small>Si no marcás ninguno, entran todos.</small>
@@ -281,6 +294,7 @@
           const precioPaquete = surtido && f.get('precioPaquete') ? Math.round(+f.get('precioPaquete')) : null;
           if (precioUnidad && !minimo) { avisar('Para poner precio de promo, poné también el mínimo'); return false; }
           if (surtido && minimo && !precioPaquete) { avisar('Poné el precio del paquete'); return false; }
+          if (surtido && minimo && minimo < saboresDisponibles() * 3) { avisar(`Poné el total del paquete (por ejemplo 100), no lo de cada sabor`); return false; }
           if (surtido && precioPaquete && !minimo) { avisar('Poné cuántos heladitos trae el paquete'); return false; }
           const foto = await subirFoto(d.querySelector('#f-foto').files[0]); if (foto === false) return false;
           return hacer({ accion: 'guardar_promo', id: item?.id, titulo, detalle: String(f.get('detalle') || ''), desde: String(f.get('desde') || ''), hasta: String(f.get('hasta') || ''), foto: foto || undefined, minimo, precioUnidad, sabores: surtido ? [] : f.getAll('sabores').map(String), surtido, precioPaquete });

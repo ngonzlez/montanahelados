@@ -59,7 +59,7 @@ describe("promo de paquete surtido", () => {
     expect(r.reduce((a, x) => a + x.cantidad, 0)).toBe(100);
     expect(r[0].cantidad).toBe(12);
     expect(r.slice(1).every((x) => x.cantidad === 11)).toBe(true);
-    expect(textoReparto(100, 9)).toBe("unos 11 de cada uno");
+    expect(textoReparto(100, 9)).toBe("11 de cada uno y 1 más para completar 100");
     expect(textoReparto(200, 8)).toBe("25 de cada uno");
   });
   it("precio por paquete; los XL aparte a precio normal", () => {
