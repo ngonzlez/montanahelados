@@ -3,7 +3,6 @@
 
 import { gs, fechaVisible } from "./formato";
 import { nombreDia } from "./fechas";
-import { textoReparto } from "./surtido";
 import type { Linea, ResultadoPedido } from "./precios";
 import type { DatosFactura } from "@/db/schema";
 
@@ -40,9 +39,8 @@ export function mensajePedido(d: DatosMensaje): string {
     : [`¡Hola, Montana Helados! Quiero hacer un pedido ${hoy ? "para hoy" : "para otro día"}:`, ""];
   if (d.surtido) {
     const su = d.surtido, total = su.paquetes * su.unidades;
-    r.push("Paquetes surtidos:");
-    r.push(`- ${su.paquetes} paquete${su.paquetes > 1 ? "s" : ""} de ${su.unidades} (${total} heladitos) a ${gs(su.precioPaquete)} c/u = ${gs(c.subtotalGourmet)}`);
-    r.push(`Surtidos en ${su.sabores.length} sabores, ${textoReparto(total, su.sabores.length)}: ${su.sabores.join(", ")}`, "");
+    // paquete ya armado por ellas: en el mensaje solo va cuántos paquetes y el precio (el reparto por sabor queda en el panel)
+    r.push(`- ${su.paquetes} paquete${su.paquetes > 1 ? "s" : ""} de ${su.unidades} heladitos (${total} en total) a ${gs(su.precioPaquete)} c/u = ${gs(c.subtotalGourmet)}`, "");
   } else if (g.length) {
     r.push("Heladitos:");
     for (const l of g) r.push(`- ${l.sabor}: ${l.cantidad}`);
